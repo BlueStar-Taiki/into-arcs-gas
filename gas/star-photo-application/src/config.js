@@ -7,6 +7,7 @@ var APP_CONFIG = Object.freeze({
   MENU_NAME: 'INTO-ARCS管理',
   MENU_ITEMS: Object.freeze({
     SETUP: '初期設定を実行',
+    UPDATE_FORM_CHOICES: 'フォーム候補日を更新',
     RESEND_MAIL: '選択行に確認メール再送',
     RENOTIFY_DISCORD: '選択行をDiscord再通知'
   }),
@@ -26,8 +27,21 @@ var APP_CONFIG = Object.freeze({
     NAME: 'お名前',
     PARTICIPANTS: '参加人数',
     EMERGENCY_PHONE: '緊急連絡先電話番号',
-    EMAIL: 'メールアドレス'
+    EMAIL: 'メールアドレス',
+    APPLICATION_DATE: '申し込み日時',
+    TITLE: 'タイトル',
+    EVENT_SLOT_KEY: '開催枠キー'
   }),
+  RESPONSE_HEADER_ORDER: Object.freeze([
+    'タイムスタンプ',
+    'お名前',
+    '参加人数',
+    '緊急連絡先電話番号',
+    'メールアドレス',
+    '申し込み日時',
+    'タイトル',
+    '開催枠キー'
+  ]),
   APPLICATION_HEADERS: Object.freeze({
     APPLICATION_ID: '申込ID',
     RECEIVED_AT: '受付日時',
@@ -41,7 +55,10 @@ var APP_CONFIG = Object.freeze({
     CALENDAR_STATUS: 'カレンダー登録状況',
     EVENT_ID: 'イベントID',
     INTERNAL_NOTE: '内部メモ',
-    UPDATED_AT: '最終更新日時'
+    UPDATED_AT: '最終更新日時',
+    APPLICATION_DATE: '申し込み日時',
+    TITLE: 'タイトル',
+    EVENT_SLOT_KEY: '開催枠キー'
   }),
   APPLICATION_HEADER_ORDER: Object.freeze([
     '申込ID',
@@ -56,7 +73,10 @@ var APP_CONFIG = Object.freeze({
     'カレンダー登録状況',
     'イベントID',
     '内部メモ',
-    '最終更新日時'
+    '最終更新日時',
+    '申し込み日時',
+    'タイトル',
+    '開催枠キー'
   ]),
   SETTINGS_HEADERS: Object.freeze({
     KEY: 'キー',
@@ -220,6 +240,8 @@ var APP_CONFIG = Object.freeze({
     SETUP_CHECK: 'checkApplicationFormSetup',
     TRIGGER_INSTALL: 'installApplicationFormTriggers',
     TRIGGER_CLEANUP: 'removeDuplicateApplicationFormTriggers',
+    EVENT_AGGREGATION: 'recalculateEventDateAggregates',
+    FORM_CHOICES: 'updateApplicationFormChoices',
     FORM_SUBMIT: 'onFormSubmit',
     SEND_MAIL: 'sendConfirmationMail',
     RESEND_MAIL: 'resendConfirmationMailForActiveRow',
@@ -227,9 +249,13 @@ var APP_CONFIG = Object.freeze({
     RENOTIFY_DISCORD: 'notifyDiscordForActiveRow'
   }),
   SCRIPT_PROPERTIES: Object.freeze({
-    DISCORD_WEBHOOK_URL: 'DISCORD_WEBHOOK_URL'
+    DISCORD_WEBHOOK_URL: 'DISCORD_WEBHOOK_URL',
+    APPLICATION_FORM_ID: 'APPLICATION_FORM_ID'
   }),
-  REQUIRED_SCRIPT_PROPERTIES: Object.freeze(['DISCORD_WEBHOOK_URL']),
+  REQUIRED_SCRIPT_PROPERTIES: Object.freeze([
+    'DISCORD_WEBHOOK_URL',
+    'APPLICATION_FORM_ID'
+  ]),
   TRIGGERS: Object.freeze({
     FORM_SUBMIT_HANDLER: 'onFormSubmit'
   }),
@@ -250,6 +276,8 @@ var APP_CONFIG = Object.freeze({
     APPLICATION_PARTICIPATION_BODY: 'application_participation_body',
     APPLICATION_WAITLIST_SUBJECT: 'application_waitlist_subject',
     APPLICATION_WAITLIST_BODY: 'application_waitlist_body',
+    APPLICATION_DECLINED_SUBJECT: 'application_declined_subject',
+    APPLICATION_DECLINED_BODY: 'application_declined_body',
     EVENT_CONFIRMED_SUBJECT: 'event_confirmed_subject',
     EVENT_CONFIRMED_BODY: 'event_confirmed_body',
     EVENT_RAIN_CANCEL_SUBJECT: 'event_rain_cancel_subject',
@@ -259,11 +287,25 @@ var APP_CONFIG = Object.freeze({
     EVENT_COMPLETED_SUBJECT: 'event_completed_subject',
     EVENT_COMPLETED_BODY: 'event_completed_body'
   }),
+  MAIL_PLACEHOLDERS: Object.freeze({
+    NAME: 'お名前',
+    APPLICATION_DATE: '申し込み日時',
+    TITLE: 'タイトル',
+    PARTICIPANTS: '参加人数',
+    PRICE_PER_PERSON: '一人当たりの料金',
+    TOTAL_PRICE: '合計料金',
+    RECEPTION_START_TIME: '受付開始時間',
+    STATUS: 'ステータス',
+    CONTACT_NAME: '主催者名',
+    REPLY_TO_EMAIL: '返信先メール'
+  }),
   INITIAL_MAIL_TEMPLATES: Object.freeze([
     Object.freeze(['application_participation_subject', '【{{タイトル}}】参加受付のお知らせ', '参加受付メール件名']),
     Object.freeze(['application_participation_body', '{{お名前}} 様\n\n{{申し込み日時}}の{{タイトル}}を「参加」で受け付けました。\n参加人数: {{参加人数}}名\n合計料金: {{合計料金}}円\n受付開始時間: {{受付開始時間}}\n\n{{主催者名}}', '参加受付メール本文']),
     Object.freeze(['application_waitlist_subject', '【{{タイトル}}】キャンセル待ち受付のお知らせ', 'キャンセル待ち受付メール件名']),
     Object.freeze(['application_waitlist_body', '{{お名前}} 様\n\n{{申し込み日時}}の{{タイトル}}を「キャンセル待ち」で受け付けました。\n参加人数: {{参加人数}}名\n\n空きが出た場合にご案内します。\n{{主催者名}}', 'キャンセル待ち受付メール本文']),
+    Object.freeze(['application_declined_subject', '【{{タイトル}}】お申し込みについて', 'お断りメール件名']),
+    Object.freeze(['application_declined_body', '{{お名前}} 様\n\n{{申し込み日時}}の{{タイトル}}は定員およびキャンセル待ち上限に達したため、今回はお受けできませんでした。\n\n{{主催者名}}', 'お断りメール本文']),
     Object.freeze(['event_confirmed_subject', '【{{タイトル}}】開催決定のお知らせ', '開催決定メール件名']),
     Object.freeze(['event_confirmed_body', '{{お名前}} 様\n\n{{申し込み日時}}の{{タイトル}}は開催決定となりました。\n受付開始時間: {{受付開始時間}}\n\n{{主催者名}}', '開催決定メール本文']),
     Object.freeze(['event_rain_cancel_subject', '【{{タイトル}}】雨天中止のお知らせ', '雨天中止メール件名']),
@@ -331,11 +373,33 @@ var APP_CONFIG = Object.freeze({
     TRIGGER_CLEANUP_NONE: '重複する onFormSubmit トリガーはありません。',
     TRIGGER_CLEANUP_COMPLETE_PREFIX: '重複する onFormSubmit トリガーを削除しました。削除数: ',
     SETUP_CHECK_OK: 'セットアップ点検に問題はありません。',
-    SETUP_CHECK_NG: 'セットアップ点検で不足または不整合が見つかりました。'
+    SETUP_CHECK_NG: 'セットアップ点検で不足または不整合が見つかりました。',
+    EVENT_SLOT_NOT_FOUND_PREFIX: '開催日管理に一致する開催枠がありません: ',
+    EVENT_SLOT_DUPLICATE_PREFIX: '開催日管理に同じ日時・タイトルの開催枠が複数あります: ',
+    EVENT_SLOT_INVALID: '開催枠の日時、タイトル、定員、キャンセル待ち上限を確認してください。',
+    PARTICIPANTS_INVALID: '参加人数は1以上の整数で入力してください。',
+    MAIL_TEMPLATE_MISSING_PREFIX: 'メールテンプレートがありません: ',
+    MAIL_TEMPLATE_DUPLICATE_PREFIX: 'メールテンプレートのキーが重複しています: ',
+    MAIL_TEMPLATE_UNRESOLVED_PREFIX: 'メールテンプレートに未解決の差し込みがあります: ',
+    FORM_ITEM_MISSING_PREFIX: 'Googleフォームに対象のプルダウン項目がありません: ',
+    FORM_ITEM_DUPLICATE_PREFIX: 'Googleフォームに同名のプルダウン項目が複数あります: ',
+    FORM_CHOICES_EMPTY: '募集中の開催枠がないため、フォーム候補は更新しませんでした。',
+    FORM_CHOICES_UPDATED: 'Googleフォームの申し込み日時候補を更新しました。',
+    EVENT_AGGREGATION_COMPLETE: '開催日管理の人数集計を更新しました。',
+    RESPONSE_APPLICATION_DATE_REQUIRED: 'Googleフォームに「申し込み日時」プルダウンを追加し、回答シートに同名ヘッダーが作成されてからsetupを再実行してください。',
+    APPLICATION_MAIL_STATUS_UNSUPPORTED_PREFIX: '申込時メールの対象外ステータスです: '
+  }),
+  FORM_CHOICE: Object.freeze({
+    DATE_FORMAT: 'yyyy/MM/dd HH:mm',
+    REMAINING_PREFIX: '【残り',
+    REMAINING_SUFFIX: '人】',
+    WAITLIST_LABEL: '【残り0人・キャンセル待ち】',
+    REMAINING_SUFFIX_PATTERN: '【残り\\d+人(?:・キャンセル待ち)?】$'
   }),
   FORMULA_GUARD_PREFIXES: Object.freeze(['=', '+', '-', '@']),
   APPLICATION_ID_PREFIX: 'STAR',
   DATE_FORMAT: 'yyyy/MM/dd HH:mm:ss',
+  TIME_FORMAT: 'HH:mm',
   HEADER_ROW: 1,
   FIRST_COLUMN: 1,
   DATA_START_ROW: 2,

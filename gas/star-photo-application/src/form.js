@@ -53,7 +53,37 @@ function onFormSubmit(e) {
       e.namedValues,
       responseHeaders.EMAIL
     );
-    application[applicationHeaders.STATUS] = APP_CONFIG.STATUS.NEW;
+    var choiceValue = getNamedValue_(
+      e.namedValues,
+      responseHeaders.APPLICATION_DATE
+    );
+    var eventSlot = resolveEventSlotFromChoice_(choiceValue);
+    updateResponseEventMetadata_(
+      responseSheet,
+      e.range.getRow(),
+      responseHeaderMap,
+      eventSlot
+    );
+    var participantCount = toPositiveInteger_(
+      application[applicationHeaders.PARTICIPANTS]
+    );
+    var countsBySlot = getApplicationStatusCountsBySlot_();
+    var currentCounts = countsBySlot[eventSlot.key] || {
+      participating: 0,
+      waitlisted: 0,
+      canceled: 0,
+      declined: 0
+    };
+    application[applicationHeaders.PARTICIPANTS] = participantCount;
+    application[applicationHeaders.APPLICATION_DATE] =
+      eventSlot.applicationDate;
+    application[applicationHeaders.TITLE] = eventSlot.title;
+    application[applicationHeaders.EVENT_SLOT_KEY] = eventSlot.key;
+    application[applicationHeaders.STATUS] = determineApplicationStatus_(
+      eventSlot,
+      participantCount,
+      currentCounts
+    );
     application[applicationHeaders.MAIL_STATUS] =
       APP_CONFIG.MAIL_STATUS.UNSENT;
     application[applicationHeaders.DISCORD_STATUS] =
@@ -67,6 +97,9 @@ function onFormSubmit(e) {
     rowNumber = appendApplication_(application);
     processMailForSubmission_(application, rowNumber);
     processDiscordForSubmission_(application, rowNumber);
+    processEventMaintenanceForSubmission_(
+      application[applicationHeaders.APPLICATION_ID]
+    );
     appendLog_(
       APP_CONFIG.LOG_LEVEL.INFO,
       APP_CONFIG.PROCESS.FORM_SUBMIT,
@@ -90,6 +123,38 @@ function onFormSubmit(e) {
     throw error;
   } finally {
     lock.releaseLock();
+  }
+}
+
+function updateResponseEventMetadata_(
+  responseSheet,
+  rowNumber,
+  headerMap,
+  eventSlot
+) {
+  responseSheet
+    .getRange(rowNumber, headerMap[APP_CONFIG.RESPONSE_HEADERS.TITLE])
+    .setValue(sanitizeForSheet_(eventSlot.title));
+  responseSheet
+    .getRange(
+      rowNumber,
+      headerMap[APP_CONFIG.RESPONSE_HEADERS.EVENT_SLOT_KEY]
+    )
+    .setValue(eventSlot.key);
+}
+
+function processEventMaintenanceForSubmission_(applicationId) {
+  try {
+    updateApplicationFormChoices();
+  } catch (error) {
+    var normalized = normalizeError_(error);
+    appendLog_(
+      APP_CONFIG.LOG_LEVEL.ERROR,
+      APP_CONFIG.PROCESS.FORM_CHOICES,
+      applicationId,
+      normalized.message,
+      normalized.detail
+    );
   }
 }
 

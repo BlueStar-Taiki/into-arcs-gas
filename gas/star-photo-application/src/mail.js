@@ -1,5 +1,17 @@
 function sendConfirmationMail_(application) {
   var headers = APP_CONFIG.APPLICATION_HEADERS;
+  var status = application[headers.STATUS];
+  if (APP_CONFIG.EVENT_APPLICATION_STATUS_OPTIONS.indexOf(status) !== -1) {
+    if (status === APP_CONFIG.EVENT_APPLICATION_STATUS.CANCELED) {
+      throw new Error(
+        APP_CONFIG.TEXT.APPLICATION_MAIL_STATUS_UNSUPPORTED_PREFIX + status
+      );
+    }
+    sendTemplatedApplicationMail_(application);
+    return;
+  }
+
+  // 第2段階より前の既存申込を手動再送できるよう、旧テンプレートを残す。
   var settings = getSettings_();
   var eventName =
     settings[APP_CONFIG.SETTING_KEYS.EVENT_NAME] ||
@@ -72,6 +84,166 @@ function sendConfirmationMail_(application) {
     options.replyTo = replyTo;
   }
   MailApp.sendEmail(options);
+}
+
+function sendTemplatedApplicationMail_(application) {
+  var headers = APP_CONFIG.APPLICATION_HEADERS;
+  var recipient = String(application[headers.EMAIL] || '').trim();
+  if (!recipient) {
+    throw new Error(APP_CONFIG.TEXT.EMAIL_EMPTY);
+  }
+  var templateKeys = getApplicationTemplateKeys_(
+    application[headers.STATUS]
+  );
+  var templates = getMailTemplates_();
+  var subjectTemplate = requireMailTemplate_(
+    templates,
+    templateKeys.subject
+  );
+  var bodyTemplate = requireMailTemplate_(templates, templateKeys.body);
+  var settings = getSettings_();
+  var eventSlot = getEventSlots_().filter(function (slot) {
+    return slot.key === application[headers.EVENT_SLOT_KEY];
+  })[0];
+  if (!eventSlot) {
+    throw new Error(
+      APP_CONFIG.TEXT.EVENT_SLOT_NOT_FOUND_PREFIX +
+        application[headers.EVENT_SLOT_KEY]
+    );
+  }
+  var participantCount = Number(application[headers.PARTICIPANTS]);
+  var replyTo =
+    settings[APP_CONFIG.SETTING_KEYS.REPLY_TO_EMAIL] || '';
+  var placeholders = APP_CONFIG.MAIL_PLACEHOLDERS;
+  var context = {};
+  context[placeholders.NAME] = application[headers.NAME];
+  context[placeholders.APPLICATION_DATE] = formatDateTime_(
+    application[headers.APPLICATION_DATE]
+  );
+  context[placeholders.TITLE] = application[headers.TITLE];
+  context[placeholders.PARTICIPANTS] = participantCount;
+  context[placeholders.PRICE_PER_PERSON] = eventSlot.pricePerPerson;
+  context[placeholders.TOTAL_PRICE] =
+    eventSlot.pricePerPerson * participantCount;
+  context[placeholders.RECEPTION_START_TIME] = formatReceptionTime_(
+    eventSlot.receptionStartTime
+  );
+  context[placeholders.STATUS] = application[headers.STATUS];
+  context[placeholders.CONTACT_NAME] =
+    settings[APP_CONFIG.SETTING_KEYS.CONTACT_NAME] ||
+    APP_CONFIG.INITIAL_SETTINGS[1][1];
+  context[placeholders.REPLY_TO_EMAIL] = replyTo;
+
+  var subject = renderMailTemplate_(subjectTemplate, context);
+  var body = renderMailTemplate_(bodyTemplate, context);
+  var options = {
+    to: recipient,
+    subject: subject,
+    body: body,
+    name: context[placeholders.CONTACT_NAME]
+  };
+  if (replyTo) {
+    options.replyTo = replyTo;
+  }
+  MailApp.sendEmail(options);
+}
+
+function getApplicationTemplateKeys_(status) {
+  var statuses = APP_CONFIG.EVENT_APPLICATION_STATUS;
+  var keys = APP_CONFIG.MAIL_TEMPLATE_KEYS;
+  if (status === statuses.PARTICIPATING) {
+    return {
+      subject: keys.APPLICATION_PARTICIPATION_SUBJECT,
+      body: keys.APPLICATION_PARTICIPATION_BODY
+    };
+  }
+  if (status === statuses.WAITLISTED) {
+    return {
+      subject: keys.APPLICATION_WAITLIST_SUBJECT,
+      body: keys.APPLICATION_WAITLIST_BODY
+    };
+  }
+  if (status === statuses.DECLINED) {
+    return {
+      subject: keys.APPLICATION_DECLINED_SUBJECT,
+      body: keys.APPLICATION_DECLINED_BODY
+    };
+  }
+  throw new Error(
+    APP_CONFIG.TEXT.APPLICATION_MAIL_STATUS_UNSUPPORTED_PREFIX + status
+  );
+}
+
+function getMailTemplates_() {
+  var sheet = getRequiredSheet_(APP_CONFIG.SHEETS.MAIL_TEMPLATES);
+  var headerMap = getHeaderMap_(sheet);
+  assertHeaders_(
+    headerMap,
+    APP_CONFIG.MAIL_TEMPLATE_HEADER_ORDER,
+    APP_CONFIG.SHEETS.MAIL_TEMPLATES
+  );
+  var templates = {};
+  if (sheet.getLastRow() < APP_CONFIG.DATA_START_ROW) {
+    return templates;
+  }
+  var values = sheet
+    .getRange(
+      APP_CONFIG.DATA_START_ROW,
+      APP_CONFIG.FIRST_COLUMN,
+      sheet.getLastRow() - APP_CONFIG.HEADER_ROW,
+      sheet.getLastColumn()
+    )
+    .getDisplayValues();
+  values.forEach(function (row) {
+    var key = String(
+      row[headerMap[APP_CONFIG.MAIL_TEMPLATE_HEADERS.KEY] - 1] || ''
+    ).trim();
+    if (!key) {
+      return;
+    }
+    if (Object.prototype.hasOwnProperty.call(templates, key)) {
+      throw new Error(APP_CONFIG.TEXT.MAIL_TEMPLATE_DUPLICATE_PREFIX + key);
+    }
+    templates[key] =
+      row[headerMap[APP_CONFIG.MAIL_TEMPLATE_HEADERS.VALUE] - 1];
+  });
+  return templates;
+}
+
+function requireMailTemplate_(templates, key) {
+  if (
+    !Object.prototype.hasOwnProperty.call(templates, key) ||
+    !String(templates[key]).trim()
+  ) {
+    throw new Error(APP_CONFIG.TEXT.MAIL_TEMPLATE_MISSING_PREFIX + key);
+  }
+  return templates[key];
+}
+
+function renderMailTemplate_(template, context) {
+  var rendered = String(template);
+  Object.keys(context).forEach(function (name) {
+    rendered = rendered.split('{{' + name + '}}').join(String(context[name]));
+  });
+  var unresolved = rendered.match(/{{[^{}]+}}/g);
+  if (unresolved) {
+    throw new Error(
+      APP_CONFIG.TEXT.MAIL_TEMPLATE_UNRESOLVED_PREFIX +
+        unresolved.join(', ')
+    );
+  }
+  return rendered;
+}
+
+function formatReceptionTime_(value) {
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return Utilities.formatDate(
+      value,
+      APP_CONFIG.TIME_ZONE,
+      APP_CONFIG.TIME_FORMAT
+    );
+  }
+  return String(value || '');
 }
 
 function resendConfirmationMailForActiveRow() {

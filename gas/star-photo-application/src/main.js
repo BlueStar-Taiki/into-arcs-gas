@@ -2,6 +2,10 @@ function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu(APP_CONFIG.MENU_NAME)
     .addItem(APP_CONFIG.MENU_ITEMS.SETUP, 'runSetupFromMenu')
+    .addItem(
+      APP_CONFIG.MENU_ITEMS.UPDATE_FORM_CHOICES,
+      'updateApplicationFormChoices'
+    )
     .addSeparator()
     .addItem(
       APP_CONFIG.MENU_ITEMS.RESEND_MAIL,

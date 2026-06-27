@@ -324,13 +324,59 @@ function ensureResponseSheet_(spreadsheet) {
     );
   }
   var headerMap = getHeaderMap_(sheet);
+  var formOwnedHeaders = [
+    APP_CONFIG.RESPONSE_HEADERS.TIMESTAMP,
+    APP_CONFIG.RESPONSE_HEADERS.NAME,
+    APP_CONFIG.RESPONSE_HEADERS.PARTICIPANTS,
+    APP_CONFIG.RESPONSE_HEADERS.EMERGENCY_PHONE,
+    APP_CONFIG.RESPONSE_HEADERS.EMAIL
+  ];
   assertHeaders_(
     headerMap,
-    Object.keys(APP_CONFIG.RESPONSE_HEADERS).map(function (key) {
-      return APP_CONFIG.RESPONSE_HEADERS[key];
-    }),
+    formOwnedHeaders,
     APP_CONFIG.SHEETS.RESPONSES
   );
+  if (!headerMap[APP_CONFIG.RESPONSE_HEADERS.APPLICATION_DATE]) {
+    throw new Error(APP_CONFIG.TEXT.RESPONSE_APPLICATION_DATE_REQUIRED);
+  }
+  appendMissingHeaders_(sheet, [
+    APP_CONFIG.RESPONSE_HEADERS.TITLE,
+    APP_CONFIG.RESPONSE_HEADERS.EVENT_SLOT_KEY
+  ]);
+  assertHeaders_(
+    getHeaderMap_(sheet),
+    APP_CONFIG.RESPONSE_HEADER_ORDER,
+    APP_CONFIG.SHEETS.RESPONSES
+  );
+}
+
+/**
+ * 既存列やデータを動かさず、不足ヘッダーだけを末尾へ追加する。
+ */
+function appendMissingHeaders_(sheet, requiredHeaders) {
+  var headerMap = getHeaderMap_(sheet);
+  var missingHeaders = requiredHeaders.filter(function (header) {
+    return !headerMap[header];
+  });
+  if (!missingHeaders.length) {
+    return;
+  }
+  var startColumn = sheet.getLastColumn() + 1;
+  var requiredLastColumn = startColumn + missingHeaders.length - 1;
+  if (sheet.getMaxColumns() < requiredLastColumn) {
+    sheet.insertColumnsAfter(
+      sheet.getMaxColumns(),
+      requiredLastColumn - sheet.getMaxColumns()
+    );
+  }
+  sheet
+    .getRange(
+      APP_CONFIG.HEADER_ROW,
+      startColumn,
+      1,
+      missingHeaders.length
+    )
+    .setValues([missingHeaders]);
 }
 
 function ensureSheetWithHeaders_(spreadsheet, sheetName, headers) {
@@ -417,6 +463,9 @@ function configureApplicationSheet_(sheet) {
   widths[APP_CONFIG.APPLICATION_HEADERS.EVENT_ID] = 180;
   widths[APP_CONFIG.APPLICATION_HEADERS.INTERNAL_NOTE] = 260;
   widths[APP_CONFIG.APPLICATION_HEADERS.UPDATED_AT] = 150;
+  widths[APP_CONFIG.APPLICATION_HEADERS.APPLICATION_DATE] = 170;
+  widths[APP_CONFIG.APPLICATION_HEADERS.TITLE] = 240;
+  widths[APP_CONFIG.APPLICATION_HEADERS.EVENT_SLOT_KEY] = 260;
   Object.keys(widths).forEach(function (header) {
     sheet.setColumnWidth(headerMap[header], widths[header]);
   });
@@ -424,7 +473,7 @@ function configureApplicationSheet_(sheet) {
   setDropdown_(
     sheet,
     headerMap[APP_CONFIG.APPLICATION_HEADERS.STATUS],
-    APP_CONFIG.STATUS_OPTIONS
+    APP_CONFIG.EVENT_APPLICATION_STATUS_OPTIONS
   );
   setDropdown_(
     sheet,
@@ -444,7 +493,8 @@ function configureApplicationSheet_(sheet) {
 
   [
     APP_CONFIG.APPLICATION_HEADERS.RECEIVED_AT,
-    APP_CONFIG.APPLICATION_HEADERS.UPDATED_AT
+    APP_CONFIG.APPLICATION_HEADERS.UPDATED_AT,
+    APP_CONFIG.APPLICATION_HEADERS.APPLICATION_DATE
   ].forEach(function (header) {
     sheet
       .getRange(
@@ -556,7 +606,7 @@ function configureEventDateSheet_(sheet) {
       APP_CONFIG.VALIDATION_ROW_COUNT,
       1
     )
-    .setNumberFormat('HH:mm');
+    .setNumberFormat(APP_CONFIG.TIME_FORMAT);
   [headers.PRICE_PER_PERSON, headers.GUIDE_FEE].forEach(function (header) {
     sheet
       .getRange(
