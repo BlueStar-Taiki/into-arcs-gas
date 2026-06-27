@@ -13,8 +13,13 @@ var APP_CONFIG = Object.freeze({
   SHEETS: Object.freeze({
     RESPONSES: 'フォームの回答 1',
     APPLICATIONS: '申込管理',
+    EVENT_DATES: '開催日管理',
+    MAIL_TEMPLATES: 'メールテンプレート',
     SETTINGS: '設定',
     LOGS: 'ログ'
+  }),
+  FORM_ITEMS: Object.freeze({
+    APPLICATION_DATE: '申し込み日時'
   }),
   RESPONSE_HEADERS: Object.freeze({
     TIMESTAMP: 'タイムスタンプ',
@@ -59,6 +64,58 @@ var APP_CONFIG = Object.freeze({
     DESCRIPTION: '説明'
   }),
   SETTINGS_HEADER_ORDER: Object.freeze(['キー', '値', '説明']),
+  EVENT_DATE_HEADERS: Object.freeze({
+    APPLICATION_DATE: '申し込み日時',
+    TITLE: 'タイトル',
+    CAPACITY: '定員',
+    MINIMUM_PARTICIPANTS: '最小催行人数',
+    WAITLIST_CAPACITY: 'キャンセル待ち上限',
+    PRICE_PER_PERSON: '一人当たりの料金',
+    RECEPTION_START_TIME: '受付開始時間',
+    EVENT_MAIL_STATUS: '開催メール',
+    RECRUITMENT_STATUS: '募集状況',
+    EXECUTION_STATUS: '実施状況',
+    FINAL_PARTICIPANTS: '最終参加人数',
+    GUIDE_FEE: 'ガイド謝金',
+    ASSIGNEE: '担当',
+    PARTICIPATING: '参加',
+    WAITLISTED: 'キャンセル待ち',
+    CANCELED: 'キャンセル',
+    DECLINED: 'お断り',
+    TOTAL_APPLICATION_PARTICIPANTS: '申し込み人数',
+    EVENT_ID: 'イベントID',
+    ATTENDANCE_STATUS: '勤怠登録状況',
+    ATTENDANCE_KEY: '勤怠登録キー'
+  }),
+  EVENT_DATE_HEADER_ORDER: Object.freeze([
+    '申し込み日時',
+    'タイトル',
+    '定員',
+    '最小催行人数',
+    'キャンセル待ち上限',
+    '一人当たりの料金',
+    '受付開始時間',
+    '開催メール',
+    '募集状況',
+    '実施状況',
+    '最終参加人数',
+    'ガイド謝金',
+    '担当',
+    '参加',
+    'キャンセル待ち',
+    'キャンセル',
+    'お断り',
+    '申し込み人数',
+    'イベントID',
+    '勤怠登録状況',
+    '勤怠登録キー'
+  ]),
+  MAIL_TEMPLATE_HEADERS: Object.freeze({
+    KEY: 'キー',
+    VALUE: '値',
+    DESCRIPTION: '説明'
+  }),
+  MAIL_TEMPLATE_HEADER_ORDER: Object.freeze(['キー', '値', '説明']),
   LOG_HEADERS: Object.freeze({
     AT: '日時',
     LEVEL: 'レベル',
@@ -88,6 +145,45 @@ var APP_CONFIG = Object.freeze({
     '予約確定',
     'キャンセル',
     '対応不要'
+  ]),
+  EVENT_APPLICATION_STATUS: Object.freeze({
+    PARTICIPATING: '参加',
+    WAITLISTED: 'キャンセル待ち',
+    CANCELED: 'キャンセル',
+    DECLINED: 'お断り'
+  }),
+  EVENT_APPLICATION_STATUS_OPTIONS: Object.freeze([
+    '参加',
+    'キャンセル待ち',
+    'キャンセル',
+    'お断り'
+  ]),
+  RECRUITMENT_STATUS: Object.freeze({
+    OPEN: '募集中',
+    CLOSED: '募集終了'
+  }),
+  RECRUITMENT_STATUS_OPTIONS: Object.freeze(['募集中', '募集終了']),
+  EXECUTION_STATUS: Object.freeze({
+    RAIN_CANCELED: '雨天中止',
+    INSUFFICIENT_CANCELED: '人数不足で中止',
+    CONFIRMED: '開催決定',
+    COMPLETED: '開催済み'
+  }),
+  EXECUTION_STATUS_OPTIONS: Object.freeze([
+    '雨天中止',
+    '人数不足で中止',
+    '開催決定',
+    '開催済み'
+  ]),
+  EVENT_MAIL_STATUS: Object.freeze({
+    UNSENT: '未送信',
+    SENT: '送信済み',
+    ERROR: '送信エラー'
+  }),
+  EVENT_MAIL_STATUS_OPTIONS: Object.freeze([
+    '未送信',
+    '送信済み',
+    '送信エラー'
   ]),
   MAIL_STATUS: Object.freeze({
     UNSENT: '未送信',
@@ -148,6 +244,34 @@ var APP_CONFIG = Object.freeze({
     Object.freeze(['CONTACT_NAME', 'INTO-ARCS', '確認メールに表示する主催者名']),
     Object.freeze(['REPLY_TO_EMAIL', '', '確認メールの返信先（空欄の場合は指定しない）']),
     Object.freeze(['DISCORD_MENTION', '', 'Discord通知の先頭に付けるメンション（任意）'])
+  ]),
+  MAIL_TEMPLATE_KEYS: Object.freeze({
+    APPLICATION_PARTICIPATION_SUBJECT: 'application_participation_subject',
+    APPLICATION_PARTICIPATION_BODY: 'application_participation_body',
+    APPLICATION_WAITLIST_SUBJECT: 'application_waitlist_subject',
+    APPLICATION_WAITLIST_BODY: 'application_waitlist_body',
+    EVENT_CONFIRMED_SUBJECT: 'event_confirmed_subject',
+    EVENT_CONFIRMED_BODY: 'event_confirmed_body',
+    EVENT_RAIN_CANCEL_SUBJECT: 'event_rain_cancel_subject',
+    EVENT_RAIN_CANCEL_BODY: 'event_rain_cancel_body',
+    EVENT_INSUFFICIENT_CANCEL_SUBJECT: 'event_insufficient_cancel_subject',
+    EVENT_INSUFFICIENT_CANCEL_BODY: 'event_insufficient_cancel_body',
+    EVENT_COMPLETED_SUBJECT: 'event_completed_subject',
+    EVENT_COMPLETED_BODY: 'event_completed_body'
+  }),
+  INITIAL_MAIL_TEMPLATES: Object.freeze([
+    Object.freeze(['application_participation_subject', '【{{タイトル}}】参加受付のお知らせ', '参加受付メール件名']),
+    Object.freeze(['application_participation_body', '{{お名前}} 様\n\n{{申し込み日時}}の{{タイトル}}を「参加」で受け付けました。\n参加人数: {{参加人数}}名\n合計料金: {{合計料金}}円\n受付開始時間: {{受付開始時間}}\n\n{{主催者名}}', '参加受付メール本文']),
+    Object.freeze(['application_waitlist_subject', '【{{タイトル}}】キャンセル待ち受付のお知らせ', 'キャンセル待ち受付メール件名']),
+    Object.freeze(['application_waitlist_body', '{{お名前}} 様\n\n{{申し込み日時}}の{{タイトル}}を「キャンセル待ち」で受け付けました。\n参加人数: {{参加人数}}名\n\n空きが出た場合にご案内します。\n{{主催者名}}', 'キャンセル待ち受付メール本文']),
+    Object.freeze(['event_confirmed_subject', '【{{タイトル}}】開催決定のお知らせ', '開催決定メール件名']),
+    Object.freeze(['event_confirmed_body', '{{お名前}} 様\n\n{{申し込み日時}}の{{タイトル}}は開催決定となりました。\n受付開始時間: {{受付開始時間}}\n\n{{主催者名}}', '開催決定メール本文']),
+    Object.freeze(['event_rain_cancel_subject', '【{{タイトル}}】雨天中止のお知らせ', '雨天中止メール件名']),
+    Object.freeze(['event_rain_cancel_body', '{{お名前}} 様\n\n{{申し込み日時}}の{{タイトル}}は雨天のため中止となりました。\n\n{{主催者名}}', '雨天中止メール本文']),
+    Object.freeze(['event_insufficient_cancel_subject', '【{{タイトル}}】開催中止のお知らせ', '人数不足中止メール件名']),
+    Object.freeze(['event_insufficient_cancel_body', '{{お名前}} 様\n\n{{申し込み日時}}の{{タイトル}}は最小催行人数に達しなかったため中止となりました。\n\n{{主催者名}}', '人数不足中止メール本文']),
+    Object.freeze(['event_completed_subject', '【{{タイトル}}】開催終了のお知らせ', '開催済みメール件名']),
+    Object.freeze(['event_completed_body', '{{お名前}} 様\n\n{{タイトル}}へご参加いただきありがとうございました。\n\n{{主催者名}}', '開催済みメール本文'])
   ]),
   MAIL: Object.freeze({
     SUBJECT_PREFIX: '【INTO-ARCS】',

@@ -21,11 +21,24 @@ function setupApplicationFormSheet() {
     APP_CONFIG.SHEETS.LOGS,
     APP_CONFIG.LOG_HEADER_ORDER
   );
+  var eventDateSheet = ensureSheetWithHeaders_(
+    spreadsheet,
+    APP_CONFIG.SHEETS.EVENT_DATES,
+    APP_CONFIG.EVENT_DATE_HEADER_ORDER
+  );
+  var mailTemplateSheet = ensureSheetWithHeaders_(
+    spreadsheet,
+    APP_CONFIG.SHEETS.MAIL_TEMPLATES,
+    APP_CONFIG.MAIL_TEMPLATE_HEADER_ORDER
+  );
 
   configureApplicationSheet_(applicationSheet);
   configureSettingsSheet_(settingsSheet);
   configureLogSheet_(logSheet);
+  configureEventDateSheet_(eventDateSheet);
   seedSettings_(settingsSheet);
+  seedMailTemplates_(mailTemplateSheet);
+  configureMailTemplateSheet_(mailTemplateSheet);
   SpreadsheetApp.flush();
   appendLog_(
     APP_CONFIG.LOG_LEVEL.INFO,
@@ -214,6 +227,10 @@ function checkApplicationFormSetup() {
     });
   sheetDefinitions[APP_CONFIG.SHEETS.APPLICATIONS] =
     APP_CONFIG.APPLICATION_HEADER_ORDER;
+  sheetDefinitions[APP_CONFIG.SHEETS.EVENT_DATES] =
+    APP_CONFIG.EVENT_DATE_HEADER_ORDER;
+  sheetDefinitions[APP_CONFIG.SHEETS.MAIL_TEMPLATES] =
+    APP_CONFIG.MAIL_TEMPLATE_HEADER_ORDER;
   sheetDefinitions[APP_CONFIG.SHEETS.SETTINGS] =
     APP_CONFIG.SETTINGS_HEADER_ORDER;
   sheetDefinitions[APP_CONFIG.SHEETS.LOGS] = APP_CONFIG.LOG_HEADER_ORDER;
@@ -361,6 +378,14 @@ function ensureSheetWithHeaders_(spreadsheet, sheetName, headers) {
       headers.length - sheet.getMaxColumns()
     );
   }
+  var requiredMaxRows =
+    APP_CONFIG.DATA_START_ROW + APP_CONFIG.VALIDATION_ROW_COUNT - 1;
+  if (sheet.getMaxRows() < requiredMaxRows) {
+    sheet.insertRowsAfter(
+      sheet.getMaxRows(),
+      requiredMaxRows - sheet.getMaxRows()
+    );
+  }
   sheet
     .getRange(
       APP_CONFIG.HEADER_ROW,
@@ -472,6 +497,114 @@ function configureLogSheet_(sheet) {
     .setNumberFormat(APP_CONFIG.DATE_FORMAT);
 }
 
+function configureEventDateSheet_(sheet) {
+  var headers = APP_CONFIG.EVENT_DATE_HEADERS;
+  var headerMap = getHeaderMap_(sheet);
+  var widths = {};
+  widths[headers.APPLICATION_DATE] = 170;
+  widths[headers.TITLE] = 240;
+  widths[headers.CAPACITY] = 80;
+  widths[headers.MINIMUM_PARTICIPANTS] = 120;
+  widths[headers.WAITLIST_CAPACITY] = 140;
+  widths[headers.PRICE_PER_PERSON] = 130;
+  widths[headers.RECEPTION_START_TIME] = 120;
+  widths[headers.EVENT_MAIL_STATUS] = 110;
+  widths[headers.RECRUITMENT_STATUS] = 110;
+  widths[headers.EXECUTION_STATUS] = 140;
+  widths[headers.FINAL_PARTICIPANTS] = 110;
+  widths[headers.GUIDE_FEE] = 110;
+  widths[headers.ASSIGNEE] = 120;
+  widths[headers.PARTICIPATING] = 90;
+  widths[headers.WAITLISTED] = 120;
+  widths[headers.CANCELED] = 90;
+  widths[headers.DECLINED] = 90;
+  widths[headers.TOTAL_APPLICATION_PARTICIPANTS] = 110;
+  widths[headers.EVENT_ID] = 220;
+  widths[headers.ATTENDANCE_STATUS] = 130;
+  widths[headers.ATTENDANCE_KEY] = 180;
+  Object.keys(widths).forEach(function (header) {
+    sheet.setColumnWidth(headerMap[header], widths[header]);
+  });
+
+  setDropdown_(
+    sheet,
+    headerMap[headers.RECRUITMENT_STATUS],
+    APP_CONFIG.RECRUITMENT_STATUS_OPTIONS
+  );
+  setDropdown_(
+    sheet,
+    headerMap[headers.EXECUTION_STATUS],
+    APP_CONFIG.EXECUTION_STATUS_OPTIONS
+  );
+  setDropdown_(
+    sheet,
+    headerMap[headers.EVENT_MAIL_STATUS],
+    APP_CONFIG.EVENT_MAIL_STATUS_OPTIONS
+  );
+  sheet
+    .getRange(
+      APP_CONFIG.DATA_START_ROW,
+      headerMap[headers.APPLICATION_DATE],
+      APP_CONFIG.VALIDATION_ROW_COUNT,
+      1
+    )
+    .setNumberFormat(APP_CONFIG.DATE_FORMAT);
+  sheet
+    .getRange(
+      APP_CONFIG.DATA_START_ROW,
+      headerMap[headers.RECEPTION_START_TIME],
+      APP_CONFIG.VALIDATION_ROW_COUNT,
+      1
+    )
+    .setNumberFormat('HH:mm');
+  [headers.PRICE_PER_PERSON, headers.GUIDE_FEE].forEach(function (header) {
+    sheet
+      .getRange(
+        APP_CONFIG.DATA_START_ROW,
+        headerMap[header],
+        APP_CONFIG.VALIDATION_ROW_COUNT,
+        1
+      )
+      .setNumberFormat('#,##0');
+  });
+  ensureBasicFilter_(sheet, APP_CONFIG.EVENT_DATE_HEADER_ORDER.length);
+}
+
+function configureMailTemplateSheet_(sheet) {
+  var headerMap = getHeaderMap_(sheet);
+  sheet.setColumnWidth(headerMap[APP_CONFIG.MAIL_TEMPLATE_HEADERS.KEY], 280);
+  sheet.setColumnWidth(headerMap[APP_CONFIG.MAIL_TEMPLATE_HEADERS.VALUE], 520);
+  sheet.setColumnWidth(
+    headerMap[APP_CONFIG.MAIL_TEMPLATE_HEADERS.DESCRIPTION],
+    240
+  );
+  sheet
+    .getRange(
+      APP_CONFIG.DATA_START_ROW,
+      headerMap[APP_CONFIG.MAIL_TEMPLATE_HEADERS.VALUE],
+      APP_CONFIG.VALIDATION_ROW_COUNT,
+      1
+    )
+    .setWrap(true);
+  ensureBasicFilter_(sheet, APP_CONFIG.MAIL_TEMPLATE_HEADER_ORDER.length);
+}
+
+function ensureBasicFilter_(sheet, columnCount) {
+  if (!sheet.getFilter()) {
+    sheet
+      .getRange(
+        APP_CONFIG.HEADER_ROW,
+        APP_CONFIG.FIRST_COLUMN,
+        Math.max(
+          sheet.getLastRow(),
+          APP_CONFIG.VALIDATION_ROW_COUNT + APP_CONFIG.HEADER_ROW
+        ),
+        columnCount
+      )
+      .createFilter();
+  }
+}
+
 function seedSettings_(sheet) {
   var headerMap = getHeaderMap_(sheet);
   var existingKeys = {};
@@ -498,6 +631,37 @@ function seedSettings_(sheet) {
     row[headerMap[APP_CONFIG.SETTINGS_HEADERS.KEY] - 1] = setting[0];
     row[headerMap[APP_CONFIG.SETTINGS_HEADERS.VALUE] - 1] = setting[1];
     row[headerMap[APP_CONFIG.SETTINGS_HEADERS.DESCRIPTION] - 1] = setting[2];
+    sheet.appendRow(row);
+  });
+}
+
+function seedMailTemplates_(sheet) {
+  var headerMap = getHeaderMap_(sheet);
+  var existingKeys = {};
+  if (sheet.getLastRow() >= APP_CONFIG.DATA_START_ROW) {
+    sheet
+      .getRange(
+        APP_CONFIG.DATA_START_ROW,
+        headerMap[APP_CONFIG.MAIL_TEMPLATE_HEADERS.KEY],
+        sheet.getLastRow() - APP_CONFIG.HEADER_ROW,
+        1
+      )
+      .getDisplayValues()
+      .forEach(function (row) {
+        if (row[0]) {
+          existingKeys[row[0]] = true;
+        }
+      });
+  }
+  APP_CONFIG.INITIAL_MAIL_TEMPLATES.forEach(function (template) {
+    if (existingKeys[template[0]]) {
+      return;
+    }
+    var row = new Array(sheet.getLastColumn()).fill('');
+    row[headerMap[APP_CONFIG.MAIL_TEMPLATE_HEADERS.KEY] - 1] = template[0];
+    row[headerMap[APP_CONFIG.MAIL_TEMPLATE_HEADERS.VALUE] - 1] = template[1];
+    row[headerMap[APP_CONFIG.MAIL_TEMPLATE_HEADERS.DESCRIPTION] - 1] =
+      template[2];
     sheet.appendRow(row);
   });
 }
