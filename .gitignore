@@ -1,0 +1,15 @@
+# clasp
+.clasp.json
+
+# dependencies
+node_modules/
+
+# local env / secrets
+.env
+.env.local
+
+# macOS
+.DS_Store
+
+# logs
+*.log
