@@ -120,6 +120,10 @@ var APP_CONFIG = Object.freeze({
   }),
   PROCESS: Object.freeze({
     SETUP: 'setupApplicationFormSheet',
+    SYSTEM_SETUP: 'setupApplicationFormSystem',
+    SETUP_CHECK: 'checkApplicationFormSetup',
+    TRIGGER_INSTALL: 'installApplicationFormTriggers',
+    TRIGGER_CLEANUP: 'removeDuplicateApplicationFormTriggers',
     FORM_SUBMIT: 'onFormSubmit',
     SEND_MAIL: 'sendConfirmationMail',
     RESEND_MAIL: 'resendConfirmationMailForActiveRow',
@@ -128,6 +132,10 @@ var APP_CONFIG = Object.freeze({
   }),
   SCRIPT_PROPERTIES: Object.freeze({
     DISCORD_WEBHOOK_URL: 'DISCORD_WEBHOOK_URL'
+  }),
+  REQUIRED_SCRIPT_PROPERTIES: Object.freeze(['DISCORD_WEBHOOK_URL']),
+  TRIGGERS: Object.freeze({
+    FORM_SUBMIT_HANDLER: 'onFormSubmit'
   }),
   SETTING_KEYS: Object.freeze({
     EVENT_NAME: 'EVENT_NAME',
@@ -190,7 +198,16 @@ var APP_CONFIG = Object.freeze({
     SCRIPT_PROPERTY_MISSING_PREFIX: 'Script Properties に ',
     SCRIPT_PROPERTY_MISSING_SUFFIX: ' が設定されていません。',
     DISCORD_HTTP_ERROR_PREFIX: 'Discord通知に失敗しました。HTTP ',
-    DISCORD_RENOTIFY_LOG: 'Discordへ再通知しました。'
+    DISCORD_RENOTIFY_LOG: 'Discordへ再通知しました。',
+    REQUIRED_PROPERTIES_MISSING_PREFIX: '必須の Script Properties が不足しています: ',
+    SYSTEM_SETUP_COMPLETE: '初回セットアップが完了しました。',
+    SYSTEM_SETUP_FAILED: '初回セットアップに失敗しました。',
+    TRIGGER_CREATED: 'onFormSubmit のフォーム送信トリガーを作成しました。',
+    TRIGGER_EXISTS: 'onFormSubmit のフォーム送信トリガーは既に存在します。',
+    TRIGGER_CLEANUP_NONE: '重複する onFormSubmit トリガーはありません。',
+    TRIGGER_CLEANUP_COMPLETE_PREFIX: '重複する onFormSubmit トリガーを削除しました。削除数: ',
+    SETUP_CHECK_OK: 'セットアップ点検に問題はありません。',
+    SETUP_CHECK_NG: 'セットアップ点検で不足または不整合が見つかりました。'
   }),
   FORMULA_GUARD_PREFIXES: Object.freeze(['=', '+', '-', '@']),
   APPLICATION_ID_PREFIX: 'STAR',

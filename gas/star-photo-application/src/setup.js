@@ -36,6 +36,268 @@ function setupApplicationFormSheet() {
   );
 }
 
+/**
+ * 初回セットアップの入口。
+ * シート整備、必須プロパティ検証、インストール型トリガー作成を順に行う。
+ */
+function setupApplicationFormSystem() {
+  var result = {
+    sheetsConfigured: false,
+    propertiesValidated: false,
+    triggerCreated: false,
+    triggerAlreadyExisted: false,
+    matchingTriggerCount: 0
+  };
+  try {
+    setupApplicationFormSheet();
+    result.sheetsConfigured = true;
+    validateRequiredProperties();
+    result.propertiesValidated = true;
+
+    var triggerResult = installApplicationFormTriggers();
+    result.triggerCreated = triggerResult.created;
+    result.triggerAlreadyExisted = !triggerResult.created;
+    result.matchingTriggerCount = triggerResult.created
+      ? 1
+      : triggerResult.existingCount;
+    appendLog_(
+      APP_CONFIG.LOG_LEVEL.INFO,
+      APP_CONFIG.PROCESS.SYSTEM_SETUP,
+      '',
+      APP_CONFIG.TEXT.SYSTEM_SETUP_COMPLETE,
+      JSON.stringify(result)
+    );
+    return result;
+  } catch (error) {
+    var normalized = normalizeError_(error);
+    try {
+      appendLog_(
+        APP_CONFIG.LOG_LEVEL.ERROR,
+        APP_CONFIG.PROCESS.SYSTEM_SETUP,
+        '',
+        APP_CONFIG.TEXT.SYSTEM_SETUP_FAILED + ' ' + normalized.message,
+        JSON.stringify(result) + '\n' + normalized.detail
+      );
+    } catch (logError) {
+      console.error(logError);
+    }
+    throw error;
+  }
+}
+
+/**
+ * 必須 Script Properties の存在と空文字でないことを検証する。
+ * 値そのものは返却・ログ出力しない。
+ */
+function validateRequiredProperties() {
+  var missingKeys = getMissingRequiredProperties_();
+  if (missingKeys.length) {
+    throw new Error(
+      APP_CONFIG.TEXT.REQUIRED_PROPERTIES_MISSING_PREFIX +
+        missingKeys.join(', ')
+    );
+  }
+  return true;
+}
+
+function getMissingRequiredProperties_() {
+  var properties = PropertiesService.getScriptProperties().getProperties();
+  return APP_CONFIG.REQUIRED_SCRIPT_PROPERTIES.filter(function (key) {
+    return !Object.prototype.hasOwnProperty.call(properties, key) ||
+      !String(properties[key]).trim();
+  });
+}
+
+/**
+ * 対象スプレッドシートのフォーム送信時トリガーを、重複させず作成する。
+ */
+function installApplicationFormTriggers() {
+  var spreadsheet = SpreadsheetApp.getActive();
+  if (!spreadsheet) {
+    throw new Error(APP_CONFIG.TEXT.NO_SPREADSHEET);
+  }
+  var matchingTriggers = getApplicationFormSubmitTriggers_(spreadsheet);
+  if (matchingTriggers.length) {
+    appendLog_(
+      APP_CONFIG.LOG_LEVEL.INFO,
+      APP_CONFIG.PROCESS.TRIGGER_INSTALL,
+      '',
+      APP_CONFIG.TEXT.TRIGGER_EXISTS,
+      'count=' + matchingTriggers.length
+    );
+    return { created: false, existingCount: matchingTriggers.length };
+  }
+
+  ScriptApp.newTrigger(APP_CONFIG.TRIGGERS.FORM_SUBMIT_HANDLER)
+    .forSpreadsheet(spreadsheet)
+    .onFormSubmit()
+    .create();
+  appendLog_(
+    APP_CONFIG.LOG_LEVEL.INFO,
+    APP_CONFIG.PROCESS.TRIGGER_INSTALL,
+    '',
+    APP_CONFIG.TEXT.TRIGGER_CREATED,
+    ''
+  );
+  return { created: true, existingCount: 0 };
+}
+
+/**
+ * 現在のプロジェクトトリガーを、秘密値を含まない情報に整形して返す。
+ */
+function listApplicationFormTriggers() {
+  var triggers = ScriptApp.getProjectTriggers().map(function (trigger) {
+    return describeTrigger_(trigger);
+  });
+  console.log(JSON.stringify(triggers, null, 2));
+  return triggers;
+}
+
+/**
+ * 対象スプレッドシートの onFormSubmit トリガーを1件残して削除する。
+ * 明示的にこの関数を実行したときだけ削除する。
+ */
+function removeDuplicateApplicationFormTriggers() {
+  var spreadsheet = SpreadsheetApp.getActive();
+  if (!spreadsheet) {
+    throw new Error(APP_CONFIG.TEXT.NO_SPREADSHEET);
+  }
+  var triggers = getApplicationFormSubmitTriggers_(spreadsheet);
+  var duplicateTriggers = triggers.slice(1);
+  var duplicateDescriptions = duplicateTriggers.map(function (trigger) {
+    return describeTrigger_(trigger);
+  });
+  duplicateTriggers.forEach(function (trigger) {
+    ScriptApp.deleteTrigger(trigger);
+  });
+
+  var message = duplicateTriggers.length
+    ? APP_CONFIG.TEXT.TRIGGER_CLEANUP_COMPLETE_PREFIX +
+      duplicateTriggers.length
+    : APP_CONFIG.TEXT.TRIGGER_CLEANUP_NONE;
+  appendLog_(
+    APP_CONFIG.LOG_LEVEL.INFO,
+    APP_CONFIG.PROCESS.TRIGGER_CLEANUP,
+    '',
+    message,
+    JSON.stringify(duplicateDescriptions)
+  );
+  return {
+    removedCount: duplicateTriggers.length,
+    remainingCount: triggers.length ? 1 : 0
+  };
+}
+
+/**
+ * 現在の構成を変更せず点検する。点検ログの追記だけを行う。
+ */
+function checkApplicationFormSetup() {
+  var result = {
+    ok: true,
+    sheets: {},
+    missingProperties: [],
+    formSubmitTriggerCount: 0,
+    issues: []
+  };
+  var spreadsheet = SpreadsheetApp.getActive();
+  if (!spreadsheet) {
+    result.ok = false;
+    result.issues.push(APP_CONFIG.TEXT.NO_SPREADSHEET);
+    console.log(JSON.stringify(result, null, 2));
+    return result;
+  }
+
+  var sheetDefinitions = {};
+  sheetDefinitions[APP_CONFIG.SHEETS.RESPONSES] =
+    Object.keys(APP_CONFIG.RESPONSE_HEADERS).map(function (key) {
+      return APP_CONFIG.RESPONSE_HEADERS[key];
+    });
+  sheetDefinitions[APP_CONFIG.SHEETS.APPLICATIONS] =
+    APP_CONFIG.APPLICATION_HEADER_ORDER;
+  sheetDefinitions[APP_CONFIG.SHEETS.SETTINGS] =
+    APP_CONFIG.SETTINGS_HEADER_ORDER;
+  sheetDefinitions[APP_CONFIG.SHEETS.LOGS] = APP_CONFIG.LOG_HEADER_ORDER;
+
+  Object.keys(sheetDefinitions).forEach(function (sheetName) {
+    var sheetResult = { exists: false, headersValid: false, error: '' };
+    try {
+      var sheet = spreadsheet.getSheetByName(sheetName);
+      if (!sheet) {
+        throw new Error(APP_CONFIG.TEXT.SHEET_MISSING_PREFIX + sheetName);
+      }
+      sheetResult.exists = true;
+      var headerMap = getHeaderMap_(sheet);
+      assertHeaders_(headerMap, sheetDefinitions[sheetName], sheetName);
+      sheetResult.headersValid = true;
+    } catch (error) {
+      sheetResult.error = normalizeError_(error).message;
+      result.issues.push(sheetResult.error);
+    }
+    result.sheets[sheetName] = sheetResult;
+  });
+
+  result.missingProperties = getMissingRequiredProperties_();
+  if (result.missingProperties.length) {
+    result.issues.push(
+      APP_CONFIG.TEXT.REQUIRED_PROPERTIES_MISSING_PREFIX +
+        result.missingProperties.join(', ')
+    );
+  }
+  result.formSubmitTriggerCount =
+    getApplicationFormSubmitTriggers_(spreadsheet).length;
+  if (result.formSubmitTriggerCount !== 1) {
+    result.issues.push(
+      APP_CONFIG.TRIGGERS.FORM_SUBMIT_HANDLER +
+        ' trigger count=' +
+        result.formSubmitTriggerCount
+    );
+  }
+  result.ok = result.issues.length === 0;
+
+  var level = result.ok
+    ? APP_CONFIG.LOG_LEVEL.INFO
+    : APP_CONFIG.LOG_LEVEL.WARN;
+  var message = result.ok
+    ? APP_CONFIG.TEXT.SETUP_CHECK_OK
+    : APP_CONFIG.TEXT.SETUP_CHECK_NG;
+  try {
+    appendLog_(
+      level,
+      APP_CONFIG.PROCESS.SETUP_CHECK,
+      '',
+      message,
+      JSON.stringify(result)
+    );
+  } catch (logError) {
+    console.error(logError);
+  }
+  console.log(JSON.stringify(result, null, 2));
+  return result;
+}
+
+function getApplicationFormSubmitTriggers_(spreadsheet) {
+  var spreadsheetId = spreadsheet.getId();
+  return ScriptApp.getProjectTriggers().filter(function (trigger) {
+    return (
+      trigger.getHandlerFunction() ===
+        APP_CONFIG.TRIGGERS.FORM_SUBMIT_HANDLER &&
+      trigger.getEventType() === ScriptApp.EventType.ON_FORM_SUBMIT &&
+      trigger.getTriggerSource() === ScriptApp.TriggerSource.SPREADSHEETS &&
+      trigger.getTriggerSourceId() === spreadsheetId
+    );
+  });
+}
+
+function describeTrigger_(trigger) {
+  return {
+    uniqueId: trigger.getUniqueId(),
+    handlerFunction: trigger.getHandlerFunction(),
+    eventType: String(trigger.getEventType()),
+    triggerSource: String(trigger.getTriggerSource()),
+    triggerSourceId: trigger.getTriggerSourceId() || ''
+  };
+}
+
 function ensureResponseSheet_(spreadsheet) {
   var sheet = spreadsheet.getSheetByName(APP_CONFIG.SHEETS.RESPONSES);
   if (!sheet) {

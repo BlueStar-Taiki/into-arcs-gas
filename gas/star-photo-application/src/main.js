@@ -16,7 +16,7 @@ function onOpen() {
 
 function runSetupFromMenu() {
   try {
-    setupApplicationFormSheet();
+    setupApplicationFormSystem();
     showUiAlert_(APP_CONFIG.UI_MESSAGES.SETUP_COMPLETE);
   } catch (error) {
     showUiAlert_(
