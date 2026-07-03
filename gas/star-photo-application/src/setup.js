@@ -1,11 +1,28 @@
 /**
- * 管理用シートを再現する。既存データは削除せず、ヘッダーと書式を整える。
+ * 管理用シートを再現する。明示された廃止列以外の既存データは保持する。
  */
 function setupApplicationFormSheet() {
   var spreadsheet = getApplicationSpreadsheet_();
   spreadsheet.setSpreadsheetTimeZone(APP_CONFIG.TIME_ZONE);
 
   ensureResponseSheet_(spreadsheet);
+  var logSheet = ensureSheetWithHeaders_(
+    spreadsheet,
+    APP_CONFIG.SHEETS.LOGS,
+    APP_CONFIG.LOG_HEADER_ORDER
+  );
+  var removedApplicationHeaders =
+    removeDeprecatedApplicationColumns_(spreadsheet);
+  if (removedApplicationHeaders.length) {
+    appendLog_(
+      APP_CONFIG.LOG_LEVEL.INFO,
+      APP_CONFIG.PROCESS.SETUP_MIGRATION,
+      '',
+      APP_CONFIG.TEXT.DEPRECATED_APPLICATION_COLUMNS_REMOVED_PREFIX +
+        removedApplicationHeaders.join(', '),
+      ''
+    );
+  }
   var applicationSheet = ensureSheetWithHeaders_(
     spreadsheet,
     APP_CONFIG.SHEETS.APPLICATIONS,
@@ -15,11 +32,6 @@ function setupApplicationFormSheet() {
     spreadsheet,
     APP_CONFIG.SHEETS.SETTINGS,
     APP_CONFIG.SETTINGS_HEADER_ORDER
-  );
-  var logSheet = ensureSheetWithHeaders_(
-    spreadsheet,
-    APP_CONFIG.SHEETS.LOGS,
-    APP_CONFIG.LOG_HEADER_ORDER
   );
   var eventDateSheet = ensureSheetWithHeaders_(
     spreadsheet,
@@ -385,6 +397,34 @@ function appendMissingHeaders_(sheet, requiredHeaders) {
     .setValues([missingHeaders]);
 }
 
+/**
+ * 廃止対象ヘッダーと完全一致する申込管理列だけを削除する。
+ * 右側の列から削除し、列移動による誤削除を防ぐ。
+ */
+function removeDeprecatedApplicationColumns_(spreadsheet) {
+  var sheet = spreadsheet.getSheetByName(APP_CONFIG.SHEETS.APPLICATIONS);
+  if (!sheet || sheet.getLastColumn() < 1) {
+    return [];
+  }
+  var headerMap = getHeaderMap_(sheet);
+  var targets = APP_CONFIG.DEPRECATED_APPLICATION_HEADERS
+    .filter(function (header) {
+      return Boolean(headerMap[header]);
+    })
+    .map(function (header) {
+      return { header: header, column: headerMap[header] };
+    })
+    .sort(function (left, right) {
+      return right.column - left.column;
+    });
+  targets.forEach(function (target) {
+    sheet.deleteColumn(target.column);
+  });
+  return targets.map(function (target) {
+    return target.header;
+  });
+}
+
 function ensureSheetWithHeaders_(spreadsheet, sheetName, headers) {
   var sheet = spreadsheet.getSheetByName(sheetName);
   var isNewOrEmpty = false;
@@ -466,9 +506,6 @@ function configureApplicationSheet_(sheet) {
   widths[APP_CONFIG.APPLICATION_HEADERS.EMAIL] = 220;
   widths[APP_CONFIG.APPLICATION_HEADERS.STATUS] = 110;
   widths[APP_CONFIG.APPLICATION_HEADERS.MAIL_STATUS] = 120;
-  widths[APP_CONFIG.APPLICATION_HEADERS.DISCORD_STATUS] = 130;
-  widths[APP_CONFIG.APPLICATION_HEADERS.CALENDAR_STATUS] = 140;
-  widths[APP_CONFIG.APPLICATION_HEADERS.EVENT_ID] = 180;
   widths[APP_CONFIG.APPLICATION_HEADERS.INTERNAL_NOTE] = 260;
   widths[APP_CONFIG.APPLICATION_HEADERS.UPDATED_AT] = 150;
   widths[APP_CONFIG.APPLICATION_HEADERS.APPLICATION_DATE] = 170;
@@ -488,17 +525,6 @@ function configureApplicationSheet_(sheet) {
     headerMap[APP_CONFIG.APPLICATION_HEADERS.MAIL_STATUS],
     APP_CONFIG.MAIL_STATUS_OPTIONS
   );
-  setDropdown_(
-    sheet,
-    headerMap[APP_CONFIG.APPLICATION_HEADERS.DISCORD_STATUS],
-    APP_CONFIG.DISCORD_STATUS_OPTIONS
-  );
-  setDropdown_(
-    sheet,
-    headerMap[APP_CONFIG.APPLICATION_HEADERS.CALENDAR_STATUS],
-    APP_CONFIG.CALENDAR_STATUS_OPTIONS
-  );
-
   [
     APP_CONFIG.APPLICATION_HEADERS.RECEIVED_AT,
     APP_CONFIG.APPLICATION_HEADERS.UPDATED_AT,
@@ -688,14 +714,20 @@ function seedSettings_(sheet) {
         1
       )
       .getDisplayValues()
-      .forEach(function (row) {
+      .forEach(function (row, index) {
         if (row[0]) {
-          existingKeys[row[0]] = true;
+          existingKeys[row[0]] = APP_CONFIG.DATA_START_ROW + index;
         }
       });
   }
   APP_CONFIG.INITIAL_SETTINGS.forEach(function (setting) {
     if (existingKeys[setting[0]]) {
+      sheet
+        .getRange(
+          existingKeys[setting[0]],
+          headerMap[APP_CONFIG.SETTINGS_HEADERS.DESCRIPTION]
+        )
+        .setValue(setting[2]);
       return;
     }
     var row = new Array(sheet.getLastColumn()).fill('');

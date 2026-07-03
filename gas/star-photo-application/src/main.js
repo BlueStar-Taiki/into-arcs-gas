@@ -11,10 +11,6 @@ function onOpen() {
       APP_CONFIG.MENU_ITEMS.RESEND_MAIL,
       'resendConfirmationMailForActiveRow'
     )
-    .addItem(
-      APP_CONFIG.MENU_ITEMS.RENOTIFY_DISCORD,
-      'notifyDiscordForActiveRow'
-    )
     .addToUi();
 }
 

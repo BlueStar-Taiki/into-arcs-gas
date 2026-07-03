@@ -86,17 +86,11 @@ function onFormSubmit(e) {
     );
     application[applicationHeaders.MAIL_STATUS] =
       APP_CONFIG.MAIL_STATUS.UNSENT;
-    application[applicationHeaders.DISCORD_STATUS] =
-      APP_CONFIG.DISCORD_STATUS.UNNOTIFIED;
-    application[applicationHeaders.CALENDAR_STATUS] =
-      APP_CONFIG.CALENDAR_STATUS.UNREGISTERED;
-    application[applicationHeaders.EVENT_ID] = '';
     application[applicationHeaders.INTERNAL_NOTE] = '';
     application[applicationHeaders.UPDATED_AT] = new Date();
 
     rowNumber = appendApplication_(application);
     processMailForSubmission_(application, rowNumber);
-    processDiscordForSubmission_(application, rowNumber);
     processEventMaintenanceForSubmission_(
       application[applicationHeaders.APPLICATION_ID]
     );
@@ -174,29 +168,6 @@ function processMailForSubmission_(application, rowNumber) {
     appendLog_(
       APP_CONFIG.LOG_LEVEL.ERROR,
       APP_CONFIG.PROCESS.SEND_MAIL,
-      application[APP_CONFIG.APPLICATION_HEADERS.APPLICATION_ID],
-      normalized.message,
-      normalized.detail
-    );
-  }
-}
-
-function processDiscordForSubmission_(application, rowNumber) {
-  try {
-    notifyDiscord_(application);
-    var success = {};
-    success[APP_CONFIG.APPLICATION_HEADERS.DISCORD_STATUS] =
-      APP_CONFIG.DISCORD_STATUS.NOTIFIED;
-    updateApplicationFields_(rowNumber, success);
-  } catch (error) {
-    var failure = {};
-    failure[APP_CONFIG.APPLICATION_HEADERS.DISCORD_STATUS] =
-      APP_CONFIG.DISCORD_STATUS.ERROR;
-    updateApplicationFields_(rowNumber, failure);
-    var normalized = normalizeError_(error);
-    appendLog_(
-      APP_CONFIG.LOG_LEVEL.ERROR,
-      APP_CONFIG.PROCESS.DISCORD,
       application[APP_CONFIG.APPLICATION_HEADERS.APPLICATION_ID],
       normalized.message,
       normalized.detail

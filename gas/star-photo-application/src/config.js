@@ -8,8 +8,7 @@ var APP_CONFIG = Object.freeze({
   MENU_ITEMS: Object.freeze({
     SETUP: '初期設定を実行',
     UPDATE_FORM_CHOICES: 'フォーム候補日を更新',
-    RESEND_MAIL: '選択行に確認メール再送',
-    RENOTIFY_DISCORD: '選択行をDiscord再通知'
+    RESEND_MAIL: '選択行に確認メール再送'
   }),
   SHEETS: Object.freeze({
     RESPONSES: 'フォームの回答 1',
@@ -51,9 +50,6 @@ var APP_CONFIG = Object.freeze({
     EMAIL: 'メールアドレス',
     STATUS: 'ステータス',
     MAIL_STATUS: 'メール送信状況',
-    DISCORD_STATUS: 'Discord通知状況',
-    CALENDAR_STATUS: 'カレンダー登録状況',
-    EVENT_ID: 'イベントID',
     INTERNAL_NOTE: '内部メモ',
     UPDATED_AT: '最終更新日時',
     APPLICATION_DATE: '申し込み日時',
@@ -69,9 +65,6 @@ var APP_CONFIG = Object.freeze({
     'メールアドレス',
     'ステータス',
     'メール送信状況',
-    'Discord通知状況',
-    'カレンダー登録状況',
-    'イベントID',
     '内部メモ',
     '最終更新日時',
     '申し込み日時',
@@ -246,13 +239,12 @@ var APP_CONFIG = Object.freeze({
     SETUP_CHECK: 'checkApplicationFormSetup',
     TRIGGER_INSTALL: 'installApplicationFormTriggers',
     TRIGGER_CLEANUP: 'removeDuplicateApplicationFormTriggers',
+    SETUP_MIGRATION: 'removeDeprecatedApplicationColumns',
     EVENT_AGGREGATION: 'recalculateEventDateAggregates',
     FORM_CHOICES: 'updateApplicationFormChoices',
     FORM_SUBMIT: 'onFormSubmit',
     SEND_MAIL: 'sendConfirmationMail',
-    RESEND_MAIL: 'resendConfirmationMailForActiveRow',
-    DISCORD: 'notifyDiscord',
-    RENOTIFY_DISCORD: 'notifyDiscordForActiveRow'
+    RESEND_MAIL: 'resendConfirmationMailForActiveRow'
   }),
   SCRIPT_PROPERTIES: Object.freeze({
     DISCORD_WEBHOOK_URL: 'DISCORD_WEBHOOK_URL',
@@ -278,7 +270,7 @@ var APP_CONFIG = Object.freeze({
     Object.freeze(['CONTACT_NAME', 'INTO-ARCS', '確認メールに表示する主催者名']),
     Object.freeze(['REPLY_TO_EMAIL', '', '確認メールの返信先（空欄の場合は指定しない）']),
     Object.freeze(['DISCORD_MENTION', '', 'Discord通知の先頭に付けるメンション（任意）']),
-    Object.freeze(['CAPACITY_OVERBOOK_ALLOWANCE', '2', '定員を超えて参加扱いにできる許容人数']),
+    Object.freeze(['CAPACITY_OVERBOOK_ALLOWANCE', '2', '既に参加扱いの人数が定員を超えた場合の内部許容・警告人数（新規申込の参加判定には使用しない）']),
     Object.freeze(['LOW_REMAINING_THRESHOLD', '4', 'フォーム候補で「残りわずか」と表示する残席数のしきい値'])
   ]),
   MAIL_TEMPLATE_KEYS: Object.freeze({
@@ -374,7 +366,6 @@ var APP_CONFIG = Object.freeze({
     SCRIPT_PROPERTY_MISSING_PREFIX: 'Script Properties に ',
     SCRIPT_PROPERTY_MISSING_SUFFIX: ' が設定されていません。',
     DISCORD_HTTP_ERROR_PREFIX: 'Discord通知に失敗しました。HTTP ',
-    DISCORD_RENOTIFY_LOG: 'Discordへ再通知しました。',
     REQUIRED_PROPERTIES_MISSING_PREFIX: '必須の Script Properties が不足しています: ',
     SYSTEM_SETUP_COMPLETE: '初回セットアップが完了しました。',
     SYSTEM_SETUP_FAILED: '初回セットアップに失敗しました。',
@@ -398,17 +389,23 @@ var APP_CONFIG = Object.freeze({
     EVENT_AGGREGATION_COMPLETE: '開催日管理の人数集計を更新しました。',
     RESPONSE_APPLICATION_DATE_REQUIRED: 'Googleフォームに「申し込み日時」プルダウンを追加し、回答シートに同名ヘッダーが作成されてからsetupを再実行してください。',
     APPLICATION_MAIL_STATUS_UNSUPPORTED_PREFIX: '申込時メールの対象外ステータスです: ',
-    SETTING_NON_NEGATIVE_INTEGER_PREFIX: '設定値は0以上の整数で入力してください: '
+    SETTING_NON_NEGATIVE_INTEGER_PREFIX: '設定値は0以上の整数で入力してください: ',
+    DEPRECATED_APPLICATION_COLUMNS_REMOVED_PREFIX: '申込管理から廃止列を削除しました: '
   }),
   FORM_CHOICE: Object.freeze({
     DATE_FORMAT: 'yyyy/MM/dd HH:mm',
     REMAINING_PREFIX: '【残り',
     REMAINING_SUFFIX: '人】',
     LOW_REMAINING_LABEL: '【残りわずか】',
-    WAITLIST_LABEL: '【残り0人・キャンセル待ち】',
-    REMAINING_SUFFIX_PATTERN: '(?:【残り\\d+人(?:・キャンセル待ち)?】|【残りわずか】)$'
+    WAITLIST_LABEL: '【キャンセル待ち】',
+    REMAINING_SUFFIX_PATTERN: '(?:【残り\\d+人(?:・キャンセル待ち)?】|【残りわずか】|【キャンセル待ち】)$'
   }),
   FORMULA_GUARD_PREFIXES: Object.freeze(['=', '+', '-', '@']),
+  DEPRECATED_APPLICATION_HEADERS: Object.freeze([
+    'Discord通知状況',
+    'カレンダー登録状況',
+    'イベントID'
+  ]),
   APPLICATION_ID_PREFIX: 'STAR',
   DATE_FORMAT: 'yyyy/MM/dd HH:mm:ss',
   TIME_FORMAT: 'HH:mm',

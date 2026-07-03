@@ -150,20 +150,10 @@ function getEventSlotBaseLabel_(slot) {
 function getEventSlotChoiceLabel_(
   slot,
   participatingCount,
-  lowRemainingThreshold,
-  capacityOverbookAllowance
+  lowRemainingThreshold
 ) {
   var remaining = Math.max(slot.capacity - participatingCount, 0);
   if (remaining === 0) {
-    if (
-      participatingCount <
-      slot.capacity + (capacityOverbookAllowance || 0)
-    ) {
-      return (
-        getEventSlotBaseLabel_(slot) +
-        APP_CONFIG.FORM_CHOICE.LOW_REMAINING_LABEL
-      );
-    }
     return getEventSlotBaseLabel_(slot) + APP_CONFIG.FORM_CHOICE.WAITLIST_LABEL;
   }
   if (remaining <= lowRemainingThreshold) {
@@ -263,13 +253,13 @@ function determineApplicationStatus_(
   operationalSettings
 ) {
   var statuses = APP_CONFIG.EVENT_APPLICATION_STATUS;
-  var settings = operationalSettings || getEventOperationalSettings_();
-  var participationLimit =
-    slot.capacity + settings.capacityOverbookAllowance;
+  if (!operationalSettings) {
+    getEventOperationalSettings_();
+  }
   if (slot.recruitmentStatus !== APP_CONFIG.RECRUITMENT_STATUS.OPEN) {
     return statuses.DECLINED;
   }
-  if (counts.participating + participantCount <= participationLimit) {
+  if (counts.participating + participantCount <= slot.capacity) {
     return statuses.PARTICIPATING;
   }
   if (counts.waitlisted + participantCount <= slot.waitlistCapacity) {
@@ -293,14 +283,12 @@ function recalculateEventDateAggregates() {
   return result;
 }
 
-function recalculateEventDateAggregates_(operationalSettings) {
+function recalculateEventDateAggregates_() {
   var sheet = getRequiredSheet_(APP_CONFIG.SHEETS.EVENT_DATES);
   var headerMap = getHeaderMap_(sheet);
   var headers = APP_CONFIG.EVENT_DATE_HEADERS;
   var countsBySlot = getApplicationStatusCountsBySlot_();
   var slots = getEventSlots_();
-  operationalSettings =
-    operationalSettings || getEventOperationalSettings_();
   slots.forEach(function (slot) {
     var counts = countsBySlot[slot.key] || {
       participating: 0,
@@ -316,9 +304,7 @@ function recalculateEventDateAggregates_(operationalSettings) {
     var recruitmentStatus = slot.recruitmentStatus;
     var capacityReached =
       counts.participating + counts.waitlisted >=
-      slot.capacity +
-        operationalSettings.capacityOverbookAllowance +
-        slot.waitlistCapacity;
+      slot.capacity + slot.waitlistCapacity;
     if (
       capacityReached ||
       slot.executionStatus ||
@@ -355,17 +341,10 @@ function recalculateEventDateAggregates_(operationalSettings) {
 function updateApplicationFormChoices() {
   validateRequiredProperties();
   var operationalSettings = getEventOperationalSettings_();
-  var aggregation = recalculateEventDateAggregates_(operationalSettings);
+  var aggregation = recalculateEventDateAggregates_();
   var choices = aggregation.slots
     .filter(function (slot) {
-      var waitingRoomAvailable =
-        slot.waitlistedCount < slot.waitlistCapacity;
-      return (
-        slot.recruitmentStatus === APP_CONFIG.RECRUITMENT_STATUS.OPEN &&
-        (slot.participatingCount <
-          slot.capacity + operationalSettings.capacityOverbookAllowance ||
-          waitingRoomAvailable)
-      );
+      return isEventSlotAvailableForForm_(slot);
     })
     .sort(function (left, right) {
       return left.applicationDate.getTime() - right.applicationDate.getTime();
@@ -374,8 +353,7 @@ function updateApplicationFormChoices() {
       return getEventSlotChoiceLabel_(
         slot,
         slot.participatingCount,
-        operationalSettings.lowRemainingThreshold,
-        operationalSettings.capacityOverbookAllowance
+        operationalSettings.lowRemainingThreshold
       );
     });
   if (!choices.length) {
@@ -412,6 +390,17 @@ function updateApplicationFormChoices() {
     'choiceCount=' + choices.length
   );
   return choices;
+}
+
+function isEventSlotAvailableForForm_(slot) {
+  var activeCount = slot.participatingCount + slot.waitlistedCount;
+  var acceptanceLimit = slot.capacity + slot.waitlistCapacity;
+  return (
+    slot.recruitmentStatus === APP_CONFIG.RECRUITMENT_STATUS.OPEN &&
+    activeCount < acceptanceLimit &&
+    (slot.participatingCount < slot.capacity ||
+      slot.waitlistedCount < slot.waitlistCapacity)
+  );
 }
 
 function getEventOperationalSettings_() {
