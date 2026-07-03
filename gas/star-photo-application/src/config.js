@@ -10,6 +10,7 @@ var APP_CONFIG = Object.freeze({
     UPDATE_FORM_CHOICES: 'フォーム候補日を更新',
     REGISTER_CALENDAR: '開催枠をカレンダー登録',
     NOTIFY_DISCORD: '開催枠Discord通知を確認・送信',
+    NOTIFY_FIVE_DAYS_BEFORE: '開催5日前Discord通知を確認・送信',
     RESEND_MAIL: '選択行に確認メール再送'
   }),
   SHEETS: Object.freeze({
@@ -103,7 +104,10 @@ var APP_CONFIG = Object.freeze({
     ATTENDANCE_KEY: '勤怠登録キー',
     DISCORD_STATUS: 'Discord通知状況',
     CALENDAR_STATUS: 'カレンダー登録状況',
-    INTERNAL_NOTE: '内部メモ'
+    INTERNAL_NOTE: '内部メモ',
+    MINIMUM_NOTIFICATION: '最小催行通知',
+    WAITLIST_NOTIFICATION: 'キャンセル待ち通知',
+    FIVE_DAYS_NOTIFICATION: '5日前通知'
   }),
   EVENT_DATE_HEADER_ORDER: Object.freeze([
     '申し込み日時',
@@ -129,7 +133,10 @@ var APP_CONFIG = Object.freeze({
     'イベントID',
     '内部メモ',
     '勤怠登録状況',
-    '勤怠登録キー'
+    '勤怠登録キー',
+    '最小催行通知',
+    'キャンセル待ち通知',
+    '5日前通知'
   ]),
   MAIL_TEMPLATE_HEADERS: Object.freeze({
     KEY: 'キー',
@@ -235,6 +242,16 @@ var APP_CONFIG = Object.freeze({
     MINIMUM: 'minimum',
     WAITLIST: 'waitlist'
   }),
+  NOTIFICATION_STATUS: Object.freeze({
+    UNNOTIFIED: '未通知',
+    NOTIFIED: '通知済み',
+    ERROR: '通知エラー'
+  }),
+  NOTIFICATION_STATUS_OPTIONS: Object.freeze([
+    '未通知',
+    '通知済み',
+    '通知エラー'
+  ]),
   CALENDAR_STATUS: Object.freeze({
     UNREGISTERED: '未登録',
     REGISTERED: '登録済み',
@@ -261,6 +278,7 @@ var APP_CONFIG = Object.freeze({
     SETUP_MIGRATION: 'removeDeprecatedApplicationColumns',
     CALENDAR_REGISTER: 'registerEventSlotsToCalendar',
     DISCORD_MILESTONES: 'notifyEventMilestones',
+    DISCORD_FIVE_DAYS: 'notifyUpcomingEventFiveDaysBefore',
     EVENT_AGGREGATION: 'recalculateEventDateAggregates',
     FORM_CHOICES: 'updateApplicationFormChoices',
     FORM_SUBMIT: 'onFormSubmit',
@@ -273,11 +291,11 @@ var APP_CONFIG = Object.freeze({
     CALENDAR_ID: 'CALENDAR_ID'
   }),
   REQUIRED_SCRIPT_PROPERTIES: Object.freeze([
-    'DISCORD_WEBHOOK_URL',
     'APPLICATION_FORM_ID'
   ]),
   TRIGGERS: Object.freeze({
-    FORM_SUBMIT_HANDLER: 'onFormSubmit'
+    FORM_SUBMIT_HANDLER: 'onFormSubmit',
+    FIVE_DAYS_HANDLER: 'notifyUpcomingEventFiveDaysBefore'
   }),
   SETTING_KEYS: Object.freeze({
     EVENT_NAME: 'EVENT_NAME',
@@ -425,6 +443,7 @@ var APP_CONFIG = Object.freeze({
     SETTING_NON_NEGATIVE_INTEGER_PREFIX: '設定値は0以上の整数で入力してください: ',
     DEPRECATED_APPLICATION_COLUMNS_REMOVED_PREFIX: '申込管理から廃止列を削除しました: ',
     OPTIONAL_CALENDAR_ID_MISSING: '任意機能の Script Properties が未設定です: CALENDAR_ID',
+    OPTIONAL_DISCORD_WEBHOOK_MISSING: '任意機能の Script Properties が未設定です: DISCORD_WEBHOOK_URL',
     CALENDAR_NOT_FOUND: 'CALENDAR_ID に対応するGoogleカレンダーを取得できません。',
     CALENDAR_EVENT_INVALID_PREFIX: 'カレンダー登録に必要な日時またはタイトルが不正です。行: ',
     CALENDAR_REGISTERED_PREFIX: '開催枠をカレンダーへ登録しました。行: ',
@@ -434,8 +453,13 @@ var APP_CONFIG = Object.freeze({
     CALENDAR_REGISTER_COMPLETE: '開催枠のカレンダー登録処理が完了しました。',
     DISCORD_MINIMUM_TITLE: '星空撮影イベントが最小催行人数に到達しました',
     DISCORD_WAITLIST_TITLE: '星空撮影イベントの申し込みフォームがキャンセル待ちになりました',
+    DISCORD_FIVE_DAYS_TITLE: '星空撮影イベントの開催5日前です',
     DISCORD_MILESTONE_COMPLETE: '開催枠のDiscord通知判定が完了しました。',
-    DISCORD_MILESTONE_ERROR_PREFIX: '開催枠のDiscord通知に失敗しました。行: '
+    DISCORD_MILESTONE_ERROR_PREFIX: '開催枠のDiscord通知に失敗しました。行: ',
+    DISCORD_FIVE_DAYS_COMPLETE: '開催5日前のDiscord通知判定が完了しました。',
+    DISCORD_FIVE_DAYS_ERROR_PREFIX: '開催5日前のDiscord通知に失敗しました。行: ',
+    FIVE_DAYS_TRIGGER_CREATED: '開催5日前通知の日次トリガーを作成しました。',
+    FIVE_DAYS_TRIGGER_EXISTS: '開催5日前通知の日次トリガーは既に存在します。'
   }),
   FORM_CHOICE: Object.freeze({
     DATE_FORMAT: 'yyyy/MM/dd HH:mm',
@@ -452,9 +476,12 @@ var APP_CONFIG = Object.freeze({
     'イベントID'
   ]),
   APPLICATION_ID_PREFIX: 'STAR',
+  DAY_FORMAT: 'yyyy-MM-dd',
   DATE_FORMAT: 'yyyy/MM/dd HH:mm:ss',
   TIME_FORMAT: 'HH:mm',
   CALENDAR_EVENT_DURATION_HOURS: 2,
+  FIVE_DAYS_BEFORE_TRIGGER_HOUR: 9,
+  UPCOMING_NOTIFICATION_DAYS_BEFORE: 5,
   HEADER_ROW: 1,
   FIRST_COLUMN: 1,
   DATA_START_ROW: 2,

@@ -57,6 +57,18 @@ function getEventSlots_() {
         discordStatus: String(
           row[headerMap[headers.DISCORD_STATUS] - 1] ||
             APP_CONFIG.DISCORD_STATUS.UNNOTIFIED
+        ),
+        minimumNotificationStatus: String(
+          row[headerMap[headers.MINIMUM_NOTIFICATION] - 1] ||
+            APP_CONFIG.NOTIFICATION_STATUS.UNNOTIFIED
+        ),
+        waitlistNotificationStatus: String(
+          row[headerMap[headers.WAITLIST_NOTIFICATION] - 1] ||
+            APP_CONFIG.NOTIFICATION_STATUS.UNNOTIFIED
+        ),
+        fiveDaysNotificationStatus: String(
+          row[headerMap[headers.FIVE_DAYS_NOTIFICATION] - 1] ||
+            APP_CONFIG.NOTIFICATION_STATUS.UNNOTIFIED
         )
       };
       if (

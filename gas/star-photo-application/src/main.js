@@ -14,6 +14,10 @@ function onOpen() {
       APP_CONFIG.MENU_ITEMS.NOTIFY_DISCORD,
       'notifyEventMilestones'
     )
+    .addItem(
+      APP_CONFIG.MENU_ITEMS.NOTIFY_FIVE_DAYS_BEFORE,
+      'notifyUpcomingEventFiveDaysBefore'
+    )
     .addSeparator()
     .addItem(
       APP_CONFIG.MENU_ITEMS.RESEND_MAIL,

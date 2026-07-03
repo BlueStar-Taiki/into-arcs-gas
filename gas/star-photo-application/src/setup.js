@@ -73,7 +73,8 @@ function setupApplicationFormSystem() {
     propertiesValidated: false,
     triggerCreated: false,
     triggerAlreadyExisted: false,
-    matchingTriggerCount: 0
+    matchingTriggerCount: 0,
+    fiveDaysTriggerCreated: false
   };
   try {
     setupApplicationFormSheet();
@@ -87,6 +88,8 @@ function setupApplicationFormSystem() {
     result.matchingTriggerCount = triggerResult.created
       ? 1
       : triggerResult.existingCount;
+    result.fiveDaysTriggerCreated =
+      installFiveDaysBeforeNotificationTrigger_().created;
     appendLog_(
       APP_CONFIG.LOG_LEVEL.INFO,
       APP_CONFIG.PROCESS.SYSTEM_SETUP,
@@ -224,6 +227,7 @@ function checkApplicationFormSetup() {
     sheets: {},
     missingProperties: [],
     formSubmitTriggerCount: 0,
+    fiveDaysTriggerCount: 0,
     issues: [],
     warnings: []
   };
@@ -281,6 +285,13 @@ function checkApplicationFormSetup() {
   if (!calendarId || !String(calendarId).trim()) {
     result.warnings.push(APP_CONFIG.TEXT.OPTIONAL_CALENDAR_ID_MISSING);
   }
+  var discordWebhook =
+    PropertiesService.getScriptProperties().getProperty(
+      APP_CONFIG.SCRIPT_PROPERTIES.DISCORD_WEBHOOK_URL
+    );
+  if (!discordWebhook || !String(discordWebhook).trim()) {
+    result.warnings.push(APP_CONFIG.TEXT.OPTIONAL_DISCORD_WEBHOOK_MISSING);
+  }
   try {
     getEventOperationalSettings_();
   } catch (error) {
@@ -293,6 +304,22 @@ function checkApplicationFormSetup() {
       APP_CONFIG.TRIGGERS.FORM_SUBMIT_HANDLER +
         ' trigger count=' +
         result.formSubmitTriggerCount
+    );
+  }
+  result.fiveDaysTriggerCount = ScriptApp.getProjectTriggers().filter(
+    function (trigger) {
+      return (
+        trigger.getHandlerFunction() ===
+          APP_CONFIG.TRIGGERS.FIVE_DAYS_HANDLER &&
+        trigger.getEventType() === ScriptApp.EventType.CLOCK
+      );
+    }
+  ).length;
+  if (result.fiveDaysTriggerCount !== 1) {
+    result.issues.push(
+      APP_CONFIG.TRIGGERS.FIVE_DAYS_HANDLER +
+        ' trigger count=' +
+        result.fiveDaysTriggerCount
     );
   }
   result.ok = result.issues.length === 0;
@@ -620,6 +647,9 @@ function configureEventDateSheet_(sheet) {
   widths[headers.DISCORD_STATUS] = 130;
   widths[headers.CALENDAR_STATUS] = 140;
   widths[headers.INTERNAL_NOTE] = 280;
+  widths[headers.MINIMUM_NOTIFICATION] = 150;
+  widths[headers.WAITLIST_NOTIFICATION] = 150;
+  widths[headers.FIVE_DAYS_NOTIFICATION] = 110;
   Object.keys(widths).forEach(function (header) {
     sheet.setColumnWidth(headerMap[header], widths[header]);
   });
@@ -649,6 +679,17 @@ function configureEventDateSheet_(sheet) {
     headerMap[headers.CALENDAR_STATUS],
     APP_CONFIG.CALENDAR_STATUS_OPTIONS
   );
+  [
+    headers.MINIMUM_NOTIFICATION,
+    headers.WAITLIST_NOTIFICATION,
+    headers.FIVE_DAYS_NOTIFICATION
+  ].forEach(function (header) {
+    setDropdown_(
+      sheet,
+      headerMap[header],
+      APP_CONFIG.NOTIFICATION_STATUS_OPTIONS
+    );
+  });
   sheet
     .getRange(
       APP_CONFIG.DATA_START_ROW,
@@ -727,6 +768,40 @@ function seedEventDiscordStatuses_(sheet) {
         )
         .setValue(APP_CONFIG.DISCORD_STATUS.UNNOTIFIED);
     }
+    if (!hasEvent) {
+      return;
+    }
+    var combinedStatus =
+      APP_CONFIG.DISCORD_STATUS_OPTIONS.indexOf(status) !== -1
+        ? status
+        : APP_CONFIG.DISCORD_STATUS.UNNOTIFIED;
+    var initialStatuses = {};
+    initialStatuses[headers.MINIMUM_NOTIFICATION] =
+      combinedStatus === APP_CONFIG.DISCORD_STATUS.MINIMUM_NOTIFIED ||
+      combinedStatus === APP_CONFIG.DISCORD_STATUS.BOTH_NOTIFIED
+        ? APP_CONFIG.NOTIFICATION_STATUS.NOTIFIED
+        : combinedStatus === APP_CONFIG.DISCORD_STATUS.ERROR
+          ? APP_CONFIG.NOTIFICATION_STATUS.ERROR
+          : APP_CONFIG.NOTIFICATION_STATUS.UNNOTIFIED;
+    initialStatuses[headers.WAITLIST_NOTIFICATION] =
+      combinedStatus === APP_CONFIG.DISCORD_STATUS.WAITLIST_NOTIFIED ||
+      combinedStatus === APP_CONFIG.DISCORD_STATUS.BOTH_NOTIFIED
+        ? APP_CONFIG.NOTIFICATION_STATUS.NOTIFIED
+        : combinedStatus === APP_CONFIG.DISCORD_STATUS.ERROR
+          ? APP_CONFIG.NOTIFICATION_STATUS.ERROR
+          : APP_CONFIG.NOTIFICATION_STATUS.UNNOTIFIED;
+    initialStatuses[headers.FIVE_DAYS_NOTIFICATION] =
+      APP_CONFIG.NOTIFICATION_STATUS.UNNOTIFIED;
+    Object.keys(initialStatuses).forEach(function (header) {
+      var currentValue = row[headerMap[header] - 1];
+      if (
+        APP_CONFIG.NOTIFICATION_STATUS_OPTIONS.indexOf(currentValue) === -1
+      ) {
+        sheet
+          .getRange(APP_CONFIG.DATA_START_ROW + index, headerMap[header])
+          .setValue(initialStatuses[header]);
+      }
+    });
   });
 }
 
