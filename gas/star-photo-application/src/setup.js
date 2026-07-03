@@ -48,6 +48,7 @@ function setupApplicationFormSheet() {
   configureSettingsSheet_(settingsSheet);
   configureLogSheet_(logSheet);
   configureEventDateSheet_(eventDateSheet);
+  seedEventDiscordStatuses_(eventDateSheet);
   seedSettings_(settingsSheet);
   getEventOperationalSettings_();
   seedMailTemplates_(mailTemplateSheet);
@@ -223,7 +224,8 @@ function checkApplicationFormSetup() {
     sheets: {},
     missingProperties: [],
     formSubmitTriggerCount: 0,
-    issues: []
+    issues: [],
+    warnings: []
   };
   var spreadsheet = SpreadsheetApp.getActive();
   if (!spreadsheet) {
@@ -273,6 +275,12 @@ function checkApplicationFormSetup() {
         result.missingProperties.join(', ')
     );
   }
+  var calendarId = PropertiesService.getScriptProperties().getProperty(
+    APP_CONFIG.SCRIPT_PROPERTIES.CALENDAR_ID
+  );
+  if (!calendarId || !String(calendarId).trim()) {
+    result.warnings.push(APP_CONFIG.TEXT.OPTIONAL_CALENDAR_ID_MISSING);
+  }
   try {
     getEventOperationalSettings_();
   } catch (error) {
@@ -289,12 +297,15 @@ function checkApplicationFormSetup() {
   }
   result.ok = result.issues.length === 0;
 
-  var level = result.ok
-    ? APP_CONFIG.LOG_LEVEL.INFO
-    : APP_CONFIG.LOG_LEVEL.WARN;
-  var message = result.ok
-    ? APP_CONFIG.TEXT.SETUP_CHECK_OK
-    : APP_CONFIG.TEXT.SETUP_CHECK_NG;
+  var level =
+    result.ok && !result.warnings.length
+      ? APP_CONFIG.LOG_LEVEL.INFO
+      : APP_CONFIG.LOG_LEVEL.WARN;
+  var message = !result.ok
+    ? APP_CONFIG.TEXT.SETUP_CHECK_NG
+    : result.warnings.length
+      ? APP_CONFIG.TEXT.SETUP_CHECK_WARNING
+      : APP_CONFIG.TEXT.SETUP_CHECK_OK;
   try {
     appendLog_(
       level,
@@ -684,6 +695,39 @@ function configureMailTemplateSheet_(sheet) {
     )
     .setWrap(true);
   ensureBasicFilter_(sheet, APP_CONFIG.MAIL_TEMPLATE_HEADER_ORDER.length);
+}
+
+function seedEventDiscordStatuses_(sheet) {
+  if (sheet.getLastRow() < APP_CONFIG.DATA_START_ROW) {
+    return;
+  }
+  var headers = APP_CONFIG.EVENT_DATE_HEADERS;
+  var headerMap = getHeaderMap_(sheet);
+  var values = sheet
+    .getRange(
+      APP_CONFIG.DATA_START_ROW,
+      APP_CONFIG.FIRST_COLUMN,
+      sheet.getLastRow() - APP_CONFIG.HEADER_ROW,
+      sheet.getLastColumn()
+    )
+    .getValues();
+  values.forEach(function (row, index) {
+    var hasEvent =
+      row[headerMap[headers.APPLICATION_DATE] - 1] ||
+      row[headerMap[headers.TITLE] - 1];
+    var status = row[headerMap[headers.DISCORD_STATUS] - 1];
+    if (
+      hasEvent &&
+      APP_CONFIG.DISCORD_STATUS_OPTIONS.indexOf(status) === -1
+    ) {
+      sheet
+        .getRange(
+          APP_CONFIG.DATA_START_ROW + index,
+          headerMap[headers.DISCORD_STATUS]
+        )
+        .setValue(APP_CONFIG.DISCORD_STATUS.UNNOTIFIED);
+    }
+  });
 }
 
 function ensureBasicFilter_(sheet, columnCount) {

@@ -6,6 +6,14 @@ function onOpen() {
       APP_CONFIG.MENU_ITEMS.UPDATE_FORM_CHOICES,
       'updateApplicationFormChoices'
     )
+    .addItem(
+      APP_CONFIG.MENU_ITEMS.REGISTER_CALENDAR,
+      'registerEventSlotsToCalendar'
+    )
+    .addItem(
+      APP_CONFIG.MENU_ITEMS.NOTIFY_DISCORD,
+      'notifyEventMilestones'
+    )
     .addSeparator()
     .addItem(
       APP_CONFIG.MENU_ITEMS.RESEND_MAIL,

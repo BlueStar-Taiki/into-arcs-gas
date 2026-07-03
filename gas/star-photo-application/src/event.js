@@ -53,6 +53,10 @@ function getEventSlots_() {
         ),
         executionStatus: String(
           row[headerMap[headers.EXECUTION_STATUS] - 1] || ''
+        ),
+        discordStatus: String(
+          row[headerMap[headers.DISCORD_STATUS] - 1] ||
+            APP_CONFIG.DISCORD_STATUS.UNNOTIFIED
         )
       };
       if (
@@ -305,14 +309,16 @@ function recalculateEventDateAggregates_() {
     var capacityReached =
       counts.participating + counts.waitlisted >=
       slot.capacity + slot.waitlistCapacity;
-    if (
-      capacityReached ||
-      slot.executionStatus ||
-      slot.applicationDate.getTime() <= new Date().getTime()
-    ) {
-      recruitmentStatus = APP_CONFIG.RECRUITMENT_STATUS.CLOSED;
-    } else if (!recruitmentStatus) {
-      recruitmentStatus = APP_CONFIG.RECRUITMENT_STATUS.OPEN;
+    if (recruitmentStatus !== APP_CONFIG.RECRUITMENT_STATUS.CANCELED) {
+      if (
+        capacityReached ||
+        slot.executionStatus ||
+        slot.applicationDate.getTime() <= new Date().getTime()
+      ) {
+        recruitmentStatus = APP_CONFIG.RECRUITMENT_STATUS.CLOSED;
+      } else if (!recruitmentStatus) {
+        recruitmentStatus = APP_CONFIG.RECRUITMENT_STATUS.OPEN;
+      }
     }
 
     var updates = {};

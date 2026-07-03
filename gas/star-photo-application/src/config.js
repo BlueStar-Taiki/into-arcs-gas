@@ -8,6 +8,8 @@ var APP_CONFIG = Object.freeze({
   MENU_ITEMS: Object.freeze({
     SETUP: '初期設定を実行',
     UPDATE_FORM_CHOICES: 'フォーム候補日を更新',
+    REGISTER_CALENDAR: '開催枠をカレンダー登録',
+    NOTIFY_DISCORD: '開催枠Discord通知を確認・送信',
     RESEND_MAIL: '選択行に確認メール再送'
   }),
   SHEETS: Object.freeze({
@@ -179,9 +181,14 @@ var APP_CONFIG = Object.freeze({
   ]),
   RECRUITMENT_STATUS: Object.freeze({
     OPEN: '募集中',
-    CLOSED: '募集終了'
+    CLOSED: '募集終了',
+    CANCELED: 'キャンセル'
   }),
-  RECRUITMENT_STATUS_OPTIONS: Object.freeze(['募集中', '募集終了']),
+  RECRUITMENT_STATUS_OPTIONS: Object.freeze([
+    '募集中',
+    '募集終了',
+    'キャンセル'
+  ]),
   EXECUTION_STATUS: Object.freeze({
     RAIN_CANCELED: '雨天中止',
     INSUFFICIENT_CANCELED: '人数不足で中止',
@@ -212,10 +219,22 @@ var APP_CONFIG = Object.freeze({
   MAIL_STATUS_OPTIONS: Object.freeze(['未送信', '送信済み', '送信エラー']),
   DISCORD_STATUS: Object.freeze({
     UNNOTIFIED: '未通知',
-    NOTIFIED: '通知済み',
+    MINIMUM_NOTIFIED: '最小催行人数到達通知済み',
+    WAITLIST_NOTIFIED: 'キャンセル待ち発生通知済み',
+    BOTH_NOTIFIED: '両方通知済み',
     ERROR: '通知エラー'
   }),
-  DISCORD_STATUS_OPTIONS: Object.freeze(['未通知', '通知済み', '通知エラー']),
+  DISCORD_STATUS_OPTIONS: Object.freeze([
+    '未通知',
+    '最小催行人数到達通知済み',
+    'キャンセル待ち発生通知済み',
+    '両方通知済み',
+    '通知エラー'
+  ]),
+  DISCORD_NOTIFICATION_TYPE: Object.freeze({
+    MINIMUM: 'minimum',
+    WAITLIST: 'waitlist'
+  }),
   CALENDAR_STATUS: Object.freeze({
     UNREGISTERED: '未登録',
     REGISTERED: '登録済み',
@@ -240,6 +259,8 @@ var APP_CONFIG = Object.freeze({
     TRIGGER_INSTALL: 'installApplicationFormTriggers',
     TRIGGER_CLEANUP: 'removeDuplicateApplicationFormTriggers',
     SETUP_MIGRATION: 'removeDeprecatedApplicationColumns',
+    CALENDAR_REGISTER: 'registerEventSlotsToCalendar',
+    DISCORD_MILESTONES: 'notifyEventMilestones',
     EVENT_AGGREGATION: 'recalculateEventDateAggregates',
     FORM_CHOICES: 'updateApplicationFormChoices',
     FORM_SUBMIT: 'onFormSubmit',
@@ -248,7 +269,8 @@ var APP_CONFIG = Object.freeze({
   }),
   SCRIPT_PROPERTIES: Object.freeze({
     DISCORD_WEBHOOK_URL: 'DISCORD_WEBHOOK_URL',
-    APPLICATION_FORM_ID: 'APPLICATION_FORM_ID'
+    APPLICATION_FORM_ID: 'APPLICATION_FORM_ID',
+    CALENDAR_ID: 'CALENDAR_ID'
   }),
   REQUIRED_SCRIPT_PROPERTIES: Object.freeze([
     'DISCORD_WEBHOOK_URL',
@@ -338,6 +360,16 @@ var APP_CONFIG = Object.freeze({
     PARTICIPANTS_SUFFIX: '名',
     FOOTER: 'INTO-ARCS 申込管理'
   }),
+  DISCORD_EVENT: Object.freeze({
+    LABEL_TITLE: 'タイトル',
+    LABEL_APPLICATION_DATE: '申し込み日時',
+    LABEL_PARTICIPATING: '参加人数',
+    LABEL_MINIMUM_PARTICIPANTS: '最小催行人数',
+    LABEL_WAITLISTED: 'キャンセル待ち人数',
+    LABEL_CAPACITY: '定員',
+    LABEL_RECRUITMENT_STATUS: '募集状況',
+    PEOPLE_SUFFIX: '人'
+  }),
   UI_MESSAGES: Object.freeze({
     SETUP_COMPLETE: '初期設定が完了しました。',
     SELECT_APPLICATION_ROW: '申込管理シートのデータ行を1行選択してください。',
@@ -375,6 +407,7 @@ var APP_CONFIG = Object.freeze({
     TRIGGER_CLEANUP_COMPLETE_PREFIX: '重複する onFormSubmit トリガーを削除しました。削除数: ',
     SETUP_CHECK_OK: 'セットアップ点検に問題はありません。',
     SETUP_CHECK_NG: 'セットアップ点検で不足または不整合が見つかりました。',
+    SETUP_CHECK_WARNING: 'セットアップ点検に警告があります。',
     EVENT_SLOT_NOT_FOUND_PREFIX: '開催日管理に一致する開催枠がありません: ',
     EVENT_SLOT_DUPLICATE_PREFIX: '開催日管理に同じ日時・タイトルの開催枠が複数あります: ',
     EVENT_SLOT_INVALID: '開催枠の日時、タイトル、定員、キャンセル待ち上限を確認してください。',
@@ -390,7 +423,19 @@ var APP_CONFIG = Object.freeze({
     RESPONSE_APPLICATION_DATE_REQUIRED: 'Googleフォームに「申し込み日時」プルダウンを追加し、回答シートに同名ヘッダーが作成されてからsetupを再実行してください。',
     APPLICATION_MAIL_STATUS_UNSUPPORTED_PREFIX: '申込時メールの対象外ステータスです: ',
     SETTING_NON_NEGATIVE_INTEGER_PREFIX: '設定値は0以上の整数で入力してください: ',
-    DEPRECATED_APPLICATION_COLUMNS_REMOVED_PREFIX: '申込管理から廃止列を削除しました: '
+    DEPRECATED_APPLICATION_COLUMNS_REMOVED_PREFIX: '申込管理から廃止列を削除しました: ',
+    OPTIONAL_CALENDAR_ID_MISSING: '任意機能の Script Properties が未設定です: CALENDAR_ID',
+    CALENDAR_NOT_FOUND: 'CALENDAR_ID に対応するGoogleカレンダーを取得できません。',
+    CALENDAR_EVENT_INVALID_PREFIX: 'カレンダー登録に必要な日時またはタイトルが不正です。行: ',
+    CALENDAR_REGISTERED_PREFIX: '開催枠をカレンダーへ登録しました。行: ',
+    CALENDAR_REGISTER_ERROR_PREFIX: '開催枠のカレンダー登録に失敗しました。行: ',
+    CALENDAR_DELETED_PREFIX: 'キャンセルされた開催枠をカレンダーから削除しました。行: ',
+    CALENDAR_DELETE_ERROR_PREFIX: 'キャンセルされた開催枠のカレンダー削除に失敗しました。行: ',
+    CALENDAR_REGISTER_COMPLETE: '開催枠のカレンダー登録処理が完了しました。',
+    DISCORD_MINIMUM_TITLE: '星空撮影イベントが最小催行人数に到達しました',
+    DISCORD_WAITLIST_TITLE: '星空撮影イベントでキャンセル待ちが発生しました',
+    DISCORD_MILESTONE_COMPLETE: '開催枠のDiscord通知判定が完了しました。',
+    DISCORD_MILESTONE_ERROR_PREFIX: '開催枠のDiscord通知に失敗しました。行: '
   }),
   FORM_CHOICE: Object.freeze({
     DATE_FORMAT: 'yyyy/MM/dd HH:mm',
@@ -409,6 +454,7 @@ var APP_CONFIG = Object.freeze({
   APPLICATION_ID_PREFIX: 'STAR',
   DATE_FORMAT: 'yyyy/MM/dd HH:mm:ss',
   TIME_FORMAT: 'HH:mm',
+  CALENDAR_EVENT_DURATION_HOURS: 2,
   HEADER_ROW: 1,
   FIRST_COLUMN: 1,
   DATA_START_ROW: 2,

@@ -94,6 +94,9 @@ function onFormSubmit(e) {
     processEventMaintenanceForSubmission_(
       application[applicationHeaders.APPLICATION_ID]
     );
+    processEventDiscordMilestonesForSubmission_(
+      application[applicationHeaders.APPLICATION_ID]
+    );
     appendLog_(
       APP_CONFIG.LOG_LEVEL.INFO,
       APP_CONFIG.PROCESS.FORM_SUBMIT,
@@ -145,6 +148,21 @@ function processEventMaintenanceForSubmission_(applicationId) {
     appendLog_(
       APP_CONFIG.LOG_LEVEL.ERROR,
       APP_CONFIG.PROCESS.FORM_CHOICES,
+      applicationId,
+      normalized.message,
+      normalized.detail
+    );
+  }
+}
+
+function processEventDiscordMilestonesForSubmission_(applicationId) {
+  try {
+    notifyEventMilestonesForAllSlots_();
+  } catch (error) {
+    var normalized = normalizeError_(error);
+    appendLog_(
+      APP_CONFIG.LOG_LEVEL.ERROR,
+      APP_CONFIG.PROCESS.DISCORD_MILESTONES,
       applicationId,
       normalized.message,
       normalized.detail

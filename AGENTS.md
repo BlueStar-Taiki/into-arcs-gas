@@ -25,6 +25,7 @@ The script must:
 - Change directory to `/Users/bluestar/system/into-arcs/into-arcs-gas`.
 - Run `git status --short`.
 - Run `git diff --check`.
+- Run `clasp push` from `gas/star-photo-application`.
 - Never add `.clasp.json`.
 - Avoid `git add .` unless explicitly justified.
 - Add only the files changed in the current update.
