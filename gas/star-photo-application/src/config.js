@@ -105,7 +105,10 @@ var APP_CONFIG = Object.freeze({
     TOTAL_APPLICATION_PARTICIPANTS: '申し込み人数',
     EVENT_ID: 'イベントID',
     ATTENDANCE_STATUS: '勤怠登録状況',
-    ATTENDANCE_KEY: '勤怠登録キー'
+    ATTENDANCE_KEY: '勤怠登録キー',
+    DISCORD_STATUS: 'Discord通知状況',
+    CALENDAR_STATUS: 'カレンダー登録状況',
+    INTERNAL_NOTE: '内部メモ'
   }),
   EVENT_DATE_HEADER_ORDER: Object.freeze([
     '申し込み日時',
@@ -126,7 +129,10 @@ var APP_CONFIG = Object.freeze({
     'キャンセル',
     'お断り',
     '申し込み人数',
+    'Discord通知状況',
+    'カレンダー登録状況',
     'イベントID',
+    '内部メモ',
     '勤怠登録状況',
     '勤怠登録キー'
   ]),
@@ -263,13 +269,17 @@ var APP_CONFIG = Object.freeze({
     EVENT_NAME: 'EVENT_NAME',
     CONTACT_NAME: 'CONTACT_NAME',
     REPLY_TO_EMAIL: 'REPLY_TO_EMAIL',
-    DISCORD_MENTION: 'DISCORD_MENTION'
+    DISCORD_MENTION: 'DISCORD_MENTION',
+    CAPACITY_OVERBOOK_ALLOWANCE: 'CAPACITY_OVERBOOK_ALLOWANCE',
+    LOW_REMAINING_THRESHOLD: 'LOW_REMAINING_THRESHOLD'
   }),
   INITIAL_SETTINGS: Object.freeze([
     Object.freeze(['EVENT_NAME', '星空撮影イベント', 'メール・通知に表示するイベント名']),
     Object.freeze(['CONTACT_NAME', 'INTO-ARCS', '確認メールに表示する主催者名']),
     Object.freeze(['REPLY_TO_EMAIL', '', '確認メールの返信先（空欄の場合は指定しない）']),
-    Object.freeze(['DISCORD_MENTION', '', 'Discord通知の先頭に付けるメンション（任意）'])
+    Object.freeze(['DISCORD_MENTION', '', 'Discord通知の先頭に付けるメンション（任意）']),
+    Object.freeze(['CAPACITY_OVERBOOK_ALLOWANCE', '2', '定員を超えて参加扱いにできる許容人数']),
+    Object.freeze(['LOW_REMAINING_THRESHOLD', '4', 'フォーム候補で「残りわずか」と表示する残席数のしきい値'])
   ]),
   MAIL_TEMPLATE_KEYS: Object.freeze({
     APPLICATION_PARTICIPATION_SUBJECT: 'application_participation_subject',
@@ -387,14 +397,16 @@ var APP_CONFIG = Object.freeze({
     FORM_CHOICES_UPDATED: 'Googleフォームの申し込み日時候補を更新しました。',
     EVENT_AGGREGATION_COMPLETE: '開催日管理の人数集計を更新しました。',
     RESPONSE_APPLICATION_DATE_REQUIRED: 'Googleフォームに「申し込み日時」プルダウンを追加し、回答シートに同名ヘッダーが作成されてからsetupを再実行してください。',
-    APPLICATION_MAIL_STATUS_UNSUPPORTED_PREFIX: '申込時メールの対象外ステータスです: '
+    APPLICATION_MAIL_STATUS_UNSUPPORTED_PREFIX: '申込時メールの対象外ステータスです: ',
+    SETTING_NON_NEGATIVE_INTEGER_PREFIX: '設定値は0以上の整数で入力してください: '
   }),
   FORM_CHOICE: Object.freeze({
     DATE_FORMAT: 'yyyy/MM/dd HH:mm',
     REMAINING_PREFIX: '【残り',
     REMAINING_SUFFIX: '人】',
+    LOW_REMAINING_LABEL: '【残りわずか】',
     WAITLIST_LABEL: '【残り0人・キャンセル待ち】',
-    REMAINING_SUFFIX_PATTERN: '【残り\\d+人(?:・キャンセル待ち)?】$'
+    REMAINING_SUFFIX_PATTERN: '(?:【残り\\d+人(?:・キャンセル待ち)?】|【残りわずか】)$'
   }),
   FORMULA_GUARD_PREFIXES: Object.freeze(['=', '+', '-', '@']),
   APPLICATION_ID_PREFIX: 'STAR',

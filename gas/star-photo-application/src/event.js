@@ -147,10 +147,30 @@ function getEventSlotBaseLabel_(slot) {
   );
 }
 
-function getEventSlotChoiceLabel_(slot, participatingCount) {
+function getEventSlotChoiceLabel_(
+  slot,
+  participatingCount,
+  lowRemainingThreshold,
+  capacityOverbookAllowance
+) {
   var remaining = Math.max(slot.capacity - participatingCount, 0);
   if (remaining === 0) {
+    if (
+      participatingCount <
+      slot.capacity + (capacityOverbookAllowance || 0)
+    ) {
+      return (
+        getEventSlotBaseLabel_(slot) +
+        APP_CONFIG.FORM_CHOICE.LOW_REMAINING_LABEL
+      );
+    }
     return getEventSlotBaseLabel_(slot) + APP_CONFIG.FORM_CHOICE.WAITLIST_LABEL;
+  }
+  if (remaining <= lowRemainingThreshold) {
+    return (
+      getEventSlotBaseLabel_(slot) +
+      APP_CONFIG.FORM_CHOICE.LOW_REMAINING_LABEL
+    );
   }
   return (
     getEventSlotBaseLabel_(slot) +
@@ -236,12 +256,20 @@ function getApplicationStatusCountsBySlot_() {
   return counts;
 }
 
-function determineApplicationStatus_(slot, participantCount, counts) {
+function determineApplicationStatus_(
+  slot,
+  participantCount,
+  counts,
+  operationalSettings
+) {
   var statuses = APP_CONFIG.EVENT_APPLICATION_STATUS;
+  var settings = operationalSettings || getEventOperationalSettings_();
+  var participationLimit =
+    slot.capacity + settings.capacityOverbookAllowance;
   if (slot.recruitmentStatus !== APP_CONFIG.RECRUITMENT_STATUS.OPEN) {
     return statuses.DECLINED;
   }
-  if (counts.participating + participantCount <= slot.capacity) {
+  if (counts.participating + participantCount <= participationLimit) {
     return statuses.PARTICIPATING;
   }
   if (counts.waitlisted + participantCount <= slot.waitlistCapacity) {
@@ -265,12 +293,14 @@ function recalculateEventDateAggregates() {
   return result;
 }
 
-function recalculateEventDateAggregates_() {
+function recalculateEventDateAggregates_(operationalSettings) {
   var sheet = getRequiredSheet_(APP_CONFIG.SHEETS.EVENT_DATES);
   var headerMap = getHeaderMap_(sheet);
   var headers = APP_CONFIG.EVENT_DATE_HEADERS;
   var countsBySlot = getApplicationStatusCountsBySlot_();
   var slots = getEventSlots_();
+  operationalSettings =
+    operationalSettings || getEventOperationalSettings_();
   slots.forEach(function (slot) {
     var counts = countsBySlot[slot.key] || {
       participating: 0,
@@ -286,7 +316,9 @@ function recalculateEventDateAggregates_() {
     var recruitmentStatus = slot.recruitmentStatus;
     var capacityReached =
       counts.participating + counts.waitlisted >=
-      slot.capacity + slot.waitlistCapacity;
+      slot.capacity +
+        operationalSettings.capacityOverbookAllowance +
+        slot.waitlistCapacity;
     if (
       capacityReached ||
       slot.executionStatus ||
@@ -322,21 +354,29 @@ function recalculateEventDateAggregates_() {
  */
 function updateApplicationFormChoices() {
   validateRequiredProperties();
-  var aggregation = recalculateEventDateAggregates_();
+  var operationalSettings = getEventOperationalSettings_();
+  var aggregation = recalculateEventDateAggregates_(operationalSettings);
   var choices = aggregation.slots
     .filter(function (slot) {
       var waitingRoomAvailable =
         slot.waitlistedCount < slot.waitlistCapacity;
       return (
         slot.recruitmentStatus === APP_CONFIG.RECRUITMENT_STATUS.OPEN &&
-        (slot.participatingCount < slot.capacity || waitingRoomAvailable)
+        (slot.participatingCount <
+          slot.capacity + operationalSettings.capacityOverbookAllowance ||
+          waitingRoomAvailable)
       );
     })
     .sort(function (left, right) {
       return left.applicationDate.getTime() - right.applicationDate.getTime();
     })
     .map(function (slot) {
-      return getEventSlotChoiceLabel_(slot, slot.participatingCount);
+      return getEventSlotChoiceLabel_(
+        slot,
+        slot.participatingCount,
+        operationalSettings.lowRemainingThreshold,
+        operationalSettings.capacityOverbookAllowance
+      );
     });
   if (!choices.length) {
     throw new Error(APP_CONFIG.TEXT.FORM_CHOICES_EMPTY);
@@ -372,4 +412,38 @@ function updateApplicationFormChoices() {
     'choiceCount=' + choices.length
   );
   return choices;
+}
+
+function getEventOperationalSettings_() {
+  var settings = getSettings_();
+  return {
+    capacityOverbookAllowance: getNonNegativeIntegerSetting_(
+      settings,
+      APP_CONFIG.SETTING_KEYS.CAPACITY_OVERBOOK_ALLOWANCE
+    ),
+    lowRemainingThreshold: getNonNegativeIntegerSetting_(
+      settings,
+      APP_CONFIG.SETTING_KEYS.LOW_REMAINING_THRESHOLD
+    )
+  };
+}
+
+function getNonNegativeIntegerSetting_(settings, key) {
+  var rawValue = settings[key];
+  if (
+    rawValue === '' ||
+    rawValue === null ||
+    typeof rawValue === 'undefined'
+  ) {
+    throw new Error(
+      APP_CONFIG.TEXT.SETTING_NON_NEGATIVE_INTEGER_PREFIX + key
+    );
+  }
+  var value = Number(rawValue);
+  if (!Number.isInteger(value) || value < 0) {
+    throw new Error(
+      APP_CONFIG.TEXT.SETTING_NON_NEGATIVE_INTEGER_PREFIX + key
+    );
+  }
+  return value;
 }

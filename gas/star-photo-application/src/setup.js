@@ -37,6 +37,7 @@ function setupApplicationFormSheet() {
   configureLogSheet_(logSheet);
   configureEventDateSheet_(eventDateSheet);
   seedSettings_(settingsSheet);
+  getEventOperationalSettings_();
   seedMailTemplates_(mailTemplateSheet);
   configureMailTemplateSheet_(mailTemplateSheet);
   SpreadsheetApp.flush();
@@ -260,6 +261,11 @@ function checkApplicationFormSetup() {
         result.missingProperties.join(', ')
     );
   }
+  try {
+    getEventOperationalSettings_();
+  } catch (error) {
+    result.issues.push(normalizeError_(error).message);
+  }
   result.formSubmitTriggerCount =
     getApplicationFormSubmitTriggers_(spreadsheet).length;
   if (result.formSubmitTriggerCount !== 1) {
@@ -381,8 +387,10 @@ function appendMissingHeaders_(sheet, requiredHeaders) {
 
 function ensureSheetWithHeaders_(spreadsheet, sheetName, headers) {
   var sheet = spreadsheet.getSheetByName(sheetName);
+  var isNewOrEmpty = false;
   if (!sheet) {
     sheet = spreadsheet.insertSheet(sheetName);
+    isNewOrEmpty = true;
   }
 
   var existingLastColumn = sheet.getLastColumn();
@@ -398,31 +406,32 @@ function ensureSheetWithHeaders_(spreadsheet, sheetName, headers) {
     var hasUnexpectedHeader = existingHeaders.some(function (header) {
       return header && headers.indexOf(String(header).trim()) === -1;
     });
-    var existingHeaderOrder = existingHeaders
-      .map(function (header) {
-        return String(header).trim();
-      })
-      .filter(String);
-    var expectedExistingOrder = headers.slice(0, existingHeaderOrder.length);
-    var orderDiffers =
-      existingHeaderOrder.join('\u0000') !==
-      expectedExistingOrder.join('\u0000');
-    if (
-      hasUnexpectedHeader ||
-      (sheet.getLastRow() > APP_CONFIG.HEADER_ROW &&
-        (existingHeaders.join('') === '' || orderDiffers))
-    ) {
+    if (hasUnexpectedHeader || existingHeaders.join('') === '') {
       throw new Error(
         sheetName + APP_CONFIG.TEXT.UNSAFE_EXISTING_SHEET_INFIX
       );
     }
+    getHeaderMap_(sheet);
+    appendMissingHeaders_(sheet, headers);
+  } else {
+    isNewOrEmpty = true;
   }
 
-  if (sheet.getMaxColumns() < headers.length) {
-    sheet.insertColumnsAfter(
-      sheet.getMaxColumns(),
-      headers.length - sheet.getMaxColumns()
-    );
+  if (isNewOrEmpty) {
+    if (sheet.getMaxColumns() < headers.length) {
+      sheet.insertColumnsAfter(
+        sheet.getMaxColumns(),
+        headers.length - sheet.getMaxColumns()
+      );
+    }
+    sheet
+      .getRange(
+        APP_CONFIG.HEADER_ROW,
+        APP_CONFIG.FIRST_COLUMN,
+        1,
+        headers.length
+      )
+      .setValues([headers]);
   }
   var requiredMaxRows =
     APP_CONFIG.DATA_START_ROW + APP_CONFIG.VALIDATION_ROW_COUNT - 1;
@@ -437,9 +446,8 @@ function ensureSheetWithHeaders_(spreadsheet, sheetName, headers) {
       APP_CONFIG.HEADER_ROW,
       APP_CONFIG.FIRST_COLUMN,
       1,
-      headers.length
+      sheet.getLastColumn()
     )
-    .setValues([headers])
     .setFontWeight('bold')
     .setBackground('#d9eaf7')
     .setWrap(true);
@@ -572,6 +580,9 @@ function configureEventDateSheet_(sheet) {
   widths[headers.EVENT_ID] = 220;
   widths[headers.ATTENDANCE_STATUS] = 130;
   widths[headers.ATTENDANCE_KEY] = 180;
+  widths[headers.DISCORD_STATUS] = 130;
+  widths[headers.CALENDAR_STATUS] = 140;
+  widths[headers.INTERNAL_NOTE] = 280;
   Object.keys(widths).forEach(function (header) {
     sheet.setColumnWidth(headerMap[header], widths[header]);
   });
@@ -590,6 +601,16 @@ function configureEventDateSheet_(sheet) {
     sheet,
     headerMap[headers.EVENT_MAIL_STATUS],
     APP_CONFIG.EVENT_MAIL_STATUS_OPTIONS
+  );
+  setDropdown_(
+    sheet,
+    headerMap[headers.DISCORD_STATUS],
+    APP_CONFIG.DISCORD_STATUS_OPTIONS
+  );
+  setDropdown_(
+    sheet,
+    headerMap[headers.CALENDAR_STATUS],
+    APP_CONFIG.CALENDAR_STATUS_OPTIONS
   );
   sheet
     .getRange(
