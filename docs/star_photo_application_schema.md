@@ -56,7 +56,7 @@ setupは申込管理の `Discord通知状況`、`カレンダー登録状況`、
 | CONTACT_NAME | INTO-ARCS | メール送信者表示名・署名 |
 | REPLY_TO_EMAIL | 空欄 | メール返信先。空欄なら指定しない |
 | DISCORD_MENTION | 空欄 | Discord本文の任意メンション |
-| CAPACITY_OVERBOOK_ALLOWANCE | 2 | 既存参加人数が定員を超えた場合の内部許容・警告人数。新規申込判定には使わない |
+| CAPACITY_OVERBOOK_ALLOWANCE | 2 | 新規申込を参加扱いにできる定員超過の許容人数 |
 | LOW_REMAINING_THRESHOLD | 4 | `残りわずか` 表示へ切り替える残席数 |
 
 `DISCORD_MENTION` は Discord の意図しないメンションを防ぐため、Webhook payload の `allowed_mentions.parse` を空にしている。実際に通知を飛ばすメンションが必要な場合は、運用方針に合わせてコード側の許可対象も明示的に変更する。

@@ -292,7 +292,7 @@ var APP_CONFIG = Object.freeze({
     Object.freeze(['CONTACT_NAME', 'INTO-ARCS', '確認メールに表示する主催者名']),
     Object.freeze(['REPLY_TO_EMAIL', '', '確認メールの返信先（空欄の場合は指定しない）']),
     Object.freeze(['DISCORD_MENTION', '', 'Discord通知の先頭に付けるメンション（任意）']),
-    Object.freeze(['CAPACITY_OVERBOOK_ALLOWANCE', '2', '既に参加扱いの人数が定員を超えた場合の内部許容・警告人数（新規申込の参加判定には使用しない）']),
+    Object.freeze(['CAPACITY_OVERBOOK_ALLOWANCE', '2', '新規申込を参加扱いにできる定員超過の許容人数']),
     Object.freeze(['LOW_REMAINING_THRESHOLD', '4', 'フォーム候補で「残りわずか」と表示する残席数のしきい値'])
   ]),
   MAIL_TEMPLATE_KEYS: Object.freeze({

@@ -257,13 +257,13 @@ function determineApplicationStatus_(
   operationalSettings
 ) {
   var statuses = APP_CONFIG.EVENT_APPLICATION_STATUS;
-  if (!operationalSettings) {
-    getEventOperationalSettings_();
-  }
+  var settings = operationalSettings || getEventOperationalSettings_();
+  var participationLimit =
+    slot.capacity + settings.capacityOverbookAllowance;
   if (slot.recruitmentStatus !== APP_CONFIG.RECRUITMENT_STATUS.OPEN) {
     return statuses.DECLINED;
   }
-  if (counts.participating + participantCount <= slot.capacity) {
+  if (counts.participating + participantCount <= participationLimit) {
     return statuses.PARTICIPATING;
   }
   if (counts.waitlisted + participantCount <= slot.waitlistCapacity) {
