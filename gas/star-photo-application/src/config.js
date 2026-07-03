@@ -107,7 +107,8 @@ var APP_CONFIG = Object.freeze({
     INTERNAL_NOTE: '内部メモ',
     MINIMUM_NOTIFICATION: '最小催行通知',
     WAITLIST_NOTIFICATION: 'キャンセル待ち通知',
-    FIVE_DAYS_NOTIFICATION: '5日前通知'
+    FIVE_DAYS_NOTIFICATION: '5日前通知',
+    PREVIOUS_EXECUTION_STATUS: '前回実施状況'
   }),
   EVENT_DATE_HEADER_ORDER: Object.freeze([
     '申し込み日時',
@@ -136,7 +137,8 @@ var APP_CONFIG = Object.freeze({
     '勤怠登録キー',
     '最小催行通知',
     'キャンセル待ち通知',
-    '5日前通知'
+    '5日前通知',
+    '前回実施状況'
   ]),
   MAIL_TEMPLATE_HEADERS: Object.freeze({
     KEY: 'キー',
@@ -279,6 +281,8 @@ var APP_CONFIG = Object.freeze({
     CALENDAR_REGISTER: 'registerEventSlotsToCalendar',
     DISCORD_MILESTONES: 'notifyEventMilestones',
     DISCORD_FIVE_DAYS: 'notifyUpcomingEventFiveDaysBefore',
+    EVENT_STATUS_MAIL: 'eventStatusMail',
+    EVENT_STATUS_EDIT: 'onEventStatusEdit',
     EVENT_AGGREGATION: 'recalculateEventDateAggregates',
     FORM_CHOICES: 'updateApplicationFormChoices',
     FORM_SUBMIT: 'onFormSubmit',
@@ -295,7 +299,8 @@ var APP_CONFIG = Object.freeze({
   ]),
   TRIGGERS: Object.freeze({
     FORM_SUBMIT_HANDLER: 'onFormSubmit',
-    FIVE_DAYS_HANDLER: 'notifyUpcomingEventFiveDaysBefore'
+    FIVE_DAYS_HANDLER: 'notifyUpcomingEventFiveDaysBefore',
+    EVENT_STATUS_EDIT_HANDLER: 'onEventStatusEdit'
   }),
   SETTING_KEYS: Object.freeze({
     EVENT_NAME: 'EVENT_NAME',
@@ -339,7 +344,8 @@ var APP_CONFIG = Object.freeze({
     RECEPTION_START_TIME: '受付開始時間',
     STATUS: 'ステータス',
     CONTACT_NAME: '主催者名',
-    REPLY_TO_EMAIL: '返信先メール'
+    REPLY_TO_EMAIL: '返信先メール',
+    EXECUTION_STATUS: '実施状況'
   }),
   INITIAL_MAIL_TEMPLATES: Object.freeze([
     Object.freeze(['application_participation_subject', '【{{タイトル}}】参加受付のお知らせ', '参加受付メール件名']),
@@ -459,7 +465,15 @@ var APP_CONFIG = Object.freeze({
     DISCORD_FIVE_DAYS_COMPLETE: '開催5日前のDiscord通知判定が完了しました。',
     DISCORD_FIVE_DAYS_ERROR_PREFIX: '開催5日前のDiscord通知に失敗しました。行: ',
     FIVE_DAYS_TRIGGER_CREATED: '開催5日前通知の日次トリガーを作成しました。',
-    FIVE_DAYS_TRIGGER_EXISTS: '開催5日前通知の日次トリガーは既に存在します。'
+    FIVE_DAYS_TRIGGER_EXISTS: '開催5日前通知の日次トリガーは既に存在します。',
+    EVENT_STATUS_EDIT_TRIGGER_CREATED: '実施状況メール確認用の編集トリガーを作成しました。',
+    EVENT_STATUS_EDIT_TRIGGER_EXISTS: '実施状況メール確認用の編集トリガーは既に存在します。',
+    EVENT_STATUS_MAIL_ALREADY_SENT: 'この開催枠の開催メールは送信済みです。実施状況の変更を元に戻しました。',
+    EVENT_STATUS_CHANGED_AGAIN: '確認中に実施状況が変更されました。現在の状態を確認してやり直してください。',
+    EVENT_STATUS_CHANGE_CANCELED: '実施状況変更をキャンセルしました。',
+    EVENT_STATUS_MAIL_SENT: '実施状況メールを送信し、変更を確定しました。',
+    EVENT_STATUS_MAIL_NO_RECIPIENTS: '送信対象者がいないため、メールを送らず実施状況を確定しました。',
+    EVENT_STATUS_MAIL_FAILED: '実施状況メールの送信に失敗したため、変更を元に戻しました。'
   }),
   FORM_CHOICE: Object.freeze({
     DATE_FORMAT: 'yyyy/MM/dd HH:mm',

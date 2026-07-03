@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body { font-family: sans-serif; color: #202124; padding: 8px 16px; }
+      dl { display: grid; grid-template-columns: 120px 1fr; gap: 6px; }
+      dt { font-weight: 600; }
+      dd { margin: 0; }
+      .names { max-height: 230px; overflow: auto; background: #f8f9fa; padding: 8px 12px; }
+      .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+      button { padding: 8px 20px; }
+      #message { white-space: pre-wrap; color: #b3261e; margin-top: 12px; }
+    </style>
+  </head>
+  <body>
+    <p id="question"></p>
+    <dl>
+      <dt>開催タイトル</dt><dd id="title"></dd>
+      <dt>申し込み日時</dt><dd id="date"></dd>
+      <dt>変更後</dt><dd id="status"></dd>
+      <dt>送信対象者数</dt><dd id="count"></dd>
+    </dl>
+    <p>送信対象者</p>
+    <ul id="names" class="names"></ul>
+    <div id="message"></div>
+    <div class="actions">
+      <button id="no" onclick="cancelChange()">いいえ</button>
+      <button id="yes" onclick="confirmSend()">はい</button>
+    </div>
+    <script>
+      const context = <?!= contextJson ?>;
+      document.getElementById('question').textContent =
+        '以下の方に「' + context.newStatus +
+        '」のメールを送信して、実施状況を確定しますか？';
+      document.getElementById('title').textContent = context.title;
+      document.getElementById('date').textContent = context.applicationDate;
+      document.getElementById('status').textContent = context.newStatus;
+      document.getElementById('count').textContent =
+        context.participantNames.length + '名';
+      const names = document.getElementById('names');
+      if (!context.participantNames.length) {
+        const item = document.createElement('li');
+        item.textContent = '送信対象者はいません（メールなしで確定します）';
+        names.appendChild(item);
+      } else {
+        context.participantNames.forEach(function (name) {
+          const item = document.createElement('li');
+          item.textContent = name;
+          names.appendChild(item);
+        });
+      }
+
+      function disableButtons() {
+        document.getElementById('yes').disabled = true;
+        document.getElementById('no').disabled = true;
+      }
+      function showError(error) {
+        document.getElementById('message').textContent =
+          error && error.message ? error.message : String(error);
+        document.getElementById('yes').disabled = false;
+        document.getElementById('no').disabled = false;
+      }
+      function confirmSend() {
+        disableButtons();
+        google.script.run
+          .withSuccessHandler(function (result) {
+            window.alert(result.message);
+            google.script.host.close();
+          })
+          .withFailureHandler(showError)
+          .sendEventStatusMailAfterConfirmation(
+            context.eventSlotKey,
+            context.newStatus
+          );
+      }
+      function cancelChange() {
+        disableButtons();
+        google.script.run
+          .withSuccessHandler(function () {
+            google.script.host.close();
+          })
+          .withFailureHandler(showError)
+          .cancelEventStatusChange(context.eventSlotKey);
+      }
+    </script>
+  </body>
+</html>

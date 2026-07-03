@@ -54,6 +54,9 @@ function getEventSlots_() {
         executionStatus: String(
           row[headerMap[headers.EXECUTION_STATUS] - 1] || ''
         ),
+        previousExecutionStatus: String(
+          row[headerMap[headers.PREVIOUS_EXECUTION_STATUS] - 1] || ''
+        ),
         discordStatus: String(
           row[headerMap[headers.DISCORD_STATUS] - 1] ||
             APP_CONFIG.DISCORD_STATUS.UNNOTIFIED

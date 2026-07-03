@@ -4,7 +4,7 @@ set -eu
 
 REPO_DIR="/Users/bluestar/system/into-arcs/into-arcs-gas"
 GAS_PROJECT_DIR="${REPO_DIR}/gas/star-photo-application"
-COMMIT_MESSAGE="feat: add five-day event Discord notifications"
+COMMIT_MESSAGE="feat: add confirmed event status mail workflow"
 
 echo "[1/9] Moving to repository: ${REPO_DIR}"
 cd "${REPO_DIR}"
@@ -42,9 +42,9 @@ git add -- \
   docs/star_photo_application_schema.md \
   docs/star_photo_event_design.md \
   gas/star-photo-application/src/config.js \
-  gas/star-photo-application/src/discord.js \
   gas/star-photo-application/src/event.js \
-  gas/star-photo-application/src/main.js \
+  gas/star-photo-application/src/eventStatusMail.js \
+  gas/star-photo-application/src/eventStatusMailConfirmDialog.html \
   gas/star-photo-application/src/setup.js \
   scripts/commit_last_update.sh
 

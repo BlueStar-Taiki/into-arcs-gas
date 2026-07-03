@@ -74,7 +74,8 @@ function setupApplicationFormSystem() {
     triggerCreated: false,
     triggerAlreadyExisted: false,
     matchingTriggerCount: 0,
-    fiveDaysTriggerCreated: false
+    fiveDaysTriggerCreated: false,
+    eventStatusEditTriggerCreated: false
   };
   try {
     setupApplicationFormSheet();
@@ -90,6 +91,8 @@ function setupApplicationFormSystem() {
       : triggerResult.existingCount;
     result.fiveDaysTriggerCreated =
       installFiveDaysBeforeNotificationTrigger_().created;
+    result.eventStatusEditTriggerCreated =
+      installEventStatusEditTrigger_().created;
     appendLog_(
       APP_CONFIG.LOG_LEVEL.INFO,
       APP_CONFIG.PROCESS.SYSTEM_SETUP,
@@ -228,6 +231,7 @@ function checkApplicationFormSetup() {
     missingProperties: [],
     formSubmitTriggerCount: 0,
     fiveDaysTriggerCount: 0,
+    eventStatusEditTriggerCount: 0,
     issues: [],
     warnings: []
   };
@@ -322,6 +326,16 @@ function checkApplicationFormSetup() {
         result.fiveDaysTriggerCount
     );
   }
+  result.eventStatusEditTriggerCount = getEventStatusEditTriggers_(
+    spreadsheet
+  ).length;
+  if (result.eventStatusEditTriggerCount !== 1) {
+    result.issues.push(
+      APP_CONFIG.TRIGGERS.EVENT_STATUS_EDIT_HANDLER +
+        ' trigger count=' +
+        result.eventStatusEditTriggerCount
+    );
+  }
   result.ok = result.issues.length === 0;
 
   var level =
@@ -369,6 +383,49 @@ function describeTrigger_(trigger) {
     triggerSource: String(trigger.getTriggerSource()),
     triggerSourceId: trigger.getTriggerSourceId() || ''
   };
+}
+
+function installEventStatusEditTrigger_() {
+  var spreadsheet = SpreadsheetApp.getActive();
+  if (!spreadsheet) {
+    throw new Error(APP_CONFIG.TEXT.NO_SPREADSHEET);
+  }
+  var triggers = getEventStatusEditTriggers_(spreadsheet);
+  if (triggers.length) {
+    appendLog_(
+      APP_CONFIG.LOG_LEVEL.INFO,
+      APP_CONFIG.PROCESS.TRIGGER_INSTALL,
+      '',
+      APP_CONFIG.TEXT.EVENT_STATUS_EDIT_TRIGGER_EXISTS,
+      'count=' + triggers.length
+    );
+    return { created: false, existingCount: triggers.length };
+  }
+  ScriptApp.newTrigger(APP_CONFIG.TRIGGERS.EVENT_STATUS_EDIT_HANDLER)
+    .forSpreadsheet(spreadsheet)
+    .onEdit()
+    .create();
+  appendLog_(
+    APP_CONFIG.LOG_LEVEL.INFO,
+    APP_CONFIG.PROCESS.TRIGGER_INSTALL,
+    '',
+    APP_CONFIG.TEXT.EVENT_STATUS_EDIT_TRIGGER_CREATED,
+    ''
+  );
+  return { created: true, existingCount: 0 };
+}
+
+function getEventStatusEditTriggers_(spreadsheet) {
+  var spreadsheetId = spreadsheet.getId();
+  return ScriptApp.getProjectTriggers().filter(function (trigger) {
+    return (
+      trigger.getHandlerFunction() ===
+        APP_CONFIG.TRIGGERS.EVENT_STATUS_EDIT_HANDLER &&
+      trigger.getEventType() === ScriptApp.EventType.ON_EDIT &&
+      trigger.getTriggerSource() === ScriptApp.TriggerSource.SPREADSHEETS &&
+      trigger.getTriggerSourceId() === spreadsheetId
+    );
+  });
 }
 
 function ensureResponseSheet_(spreadsheet) {
@@ -650,6 +707,7 @@ function configureEventDateSheet_(sheet) {
   widths[headers.MINIMUM_NOTIFICATION] = 150;
   widths[headers.WAITLIST_NOTIFICATION] = 150;
   widths[headers.FIVE_DAYS_NOTIFICATION] = 110;
+  widths[headers.PREVIOUS_EXECUTION_STATUS] = 140;
   Object.keys(widths).forEach(function (header) {
     sheet.setColumnWidth(headerMap[header], widths[header]);
   });
@@ -717,6 +775,7 @@ function configureEventDateSheet_(sheet) {
       .setNumberFormat('#,##0');
   });
   ensureBasicFilter_(sheet, APP_CONFIG.EVENT_DATE_HEADER_ORDER.length);
+  sheet.hideColumns(headerMap[headers.PREVIOUS_EXECUTION_STATUS]);
 }
 
 function configureMailTemplateSheet_(sheet) {
