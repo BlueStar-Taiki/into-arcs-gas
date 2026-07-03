@@ -4,7 +4,7 @@ set -eu
 
 REPO_DIR="/Users/bluestar/system/into-arcs/into-arcs-gas"
 GAS_PROJECT_DIR="${REPO_DIR}/gas/star-photo-application"
-COMMIT_MESSAGE="fix: apply capacity allowance to application decisions"
+COMMIT_MESSAGE="fix: notify Discord when form enters waitlist mode"
 
 echo "[1/9] Moving to repository: ${REPO_DIR}"
 cd "${REPO_DIR}"

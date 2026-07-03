@@ -433,7 +433,7 @@ var APP_CONFIG = Object.freeze({
     CALENDAR_DELETE_ERROR_PREFIX: 'キャンセルされた開催枠のカレンダー削除に失敗しました。行: ',
     CALENDAR_REGISTER_COMPLETE: '開催枠のカレンダー登録処理が完了しました。',
     DISCORD_MINIMUM_TITLE: '星空撮影イベントが最小催行人数に到達しました',
-    DISCORD_WAITLIST_TITLE: '星空撮影イベントでキャンセル待ちが発生しました',
+    DISCORD_WAITLIST_TITLE: '星空撮影イベントの申し込みフォームがキャンセル待ちになりました',
     DISCORD_MILESTONE_COMPLETE: '開催枠のDiscord通知判定が完了しました。',
     DISCORD_MILESTONE_ERROR_PREFIX: '開催枠のDiscord通知に失敗しました。行: '
   }),

@@ -90,7 +90,8 @@ function shouldNotifyMinimumParticipantsReached_(slot) {
 function shouldNotifyWaitlistStarted_(slot) {
   return Boolean(
     !isEventMilestoneNotificationExcluded_(slot) &&
-      slot.waitlistedCount >= 1 &&
+      slot.participatingCount >= slot.capacity &&
+      isEventSlotAvailableForForm_(slot) &&
       !hasWaitlistNotificationBeenSent_(slot.discordStatus)
   );
 }
