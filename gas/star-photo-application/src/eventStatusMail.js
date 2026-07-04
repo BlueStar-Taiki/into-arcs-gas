@@ -342,6 +342,8 @@ function buildGuideStatusMailContext_(guide, eventRowObject, status, settings) {
     APP_CONFIG.INITIAL_SETTINGS[1][1];
   context[placeholders.REPLY_TO_EMAIL] =
     settings[APP_CONFIG.SETTING_KEYS.REPLY_TO_EMAIL] || '';
+  context[placeholders.PARTICIPANT_ROSTER_URL] =
+    eventRowObject.participantRosterUrl || '';
   return context;
 }
 
