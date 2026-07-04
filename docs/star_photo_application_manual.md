@@ -131,6 +131,8 @@ GAS反映後は `setupApplicationFormSystem()` を再実行し、担当シート
 
 ## Googleカレンダー登録
 
+現在は `APP_CONFIG.FEATURES.CALENDAR_SYNC_ENABLED` が `false` のため、カレンダー登録機能は無効である。メニューに `開催枠をカレンダー登録` は表示されず、関数を直接実行しても登録・削除しない。別シートからの連携を再開する場合だけ、コード内のスイッチを `true` に変更して以下の手順を使用する。
+
 1. Script Propertiesへ `CALENDAR_ID` を設定する。
 2. 開催日管理の対象行に申し込み日時とタイトルを入力する。
 3. イベントIDが空欄であることを確認する。

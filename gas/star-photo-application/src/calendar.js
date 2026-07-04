@@ -3,6 +3,18 @@
  * 未登録枠は作成し、キャンセル枠の登録済みイベントは削除する。
  */
 function registerEventSlotsToCalendar() {
+  if (!APP_CONFIG.FEATURES.CALENDAR_SYNC_ENABLED) {
+    console.info(APP_CONFIG.TEXT.CALENDAR_SYNC_DISABLED);
+    return {
+      disabled: true,
+      candidateCount: 0,
+      registeredCount: 0,
+      deletionCandidateCount: 0,
+      deletedCount: 0,
+      errorCount: 0,
+      skippedCount: 0
+    };
+  }
   var calendarId = validateCalendarSettings_();
   var calendar = CalendarApp.getCalendarById(calendarId);
   if (!calendar) {

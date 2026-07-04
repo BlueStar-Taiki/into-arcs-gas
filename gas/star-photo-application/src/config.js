@@ -4,6 +4,9 @@
  */
 var APP_CONFIG = Object.freeze({
   TIME_ZONE: 'Asia/Tokyo',
+  FEATURES: Object.freeze({
+    CALENDAR_SYNC_ENABLED: false
+  }),
   MENU_NAME: 'INTO-ARCS管理',
   MENU_ITEMS: Object.freeze({
     SETUP: '初期設定を実行',
@@ -527,6 +530,7 @@ var APP_CONFIG = Object.freeze({
     CALENDAR_DELETED_PREFIX: 'キャンセルされた開催枠をカレンダーから削除しました。行: ',
     CALENDAR_DELETE_ERROR_PREFIX: 'キャンセルされた開催枠のカレンダー削除に失敗しました。行: ',
     CALENDAR_REGISTER_COMPLETE: '開催枠のカレンダー登録処理が完了しました。',
+    CALENDAR_SYNC_DISABLED: 'カレンダー登録機能はコード設定で無効になっています。',
     DISCORD_MINIMUM_TITLE: '星空撮影イベントが最小催行人数に到達しました',
     DISCORD_WAITLIST_TITLE: '星空撮影イベントの申し込みフォームがキャンセル待ちになりました',
     DISCORD_FIVE_DAYS_TITLE: '星空撮影イベントの開催5日前です',

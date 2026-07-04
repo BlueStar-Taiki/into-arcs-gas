@@ -1,15 +1,18 @@
 function onOpen() {
-  SpreadsheetApp.getUi()
+  var menu = SpreadsheetApp.getUi()
     .createMenu(APP_CONFIG.MENU_NAME)
     .addItem(APP_CONFIG.MENU_ITEMS.SETUP, 'runSetupFromMenu')
     .addItem(
       APP_CONFIG.MENU_ITEMS.UPDATE_FORM_CHOICES,
       'updateApplicationFormChoices'
-    )
-    .addItem(
+    );
+  if (APP_CONFIG.FEATURES.CALENDAR_SYNC_ENABLED) {
+    menu.addItem(
       APP_CONFIG.MENU_ITEMS.REGISTER_CALENDAR,
       'registerEventSlotsToCalendar'
-    )
+    );
+  }
+  menu
     .addItem(
       APP_CONFIG.MENU_ITEMS.NOTIFY_DISCORD,
       'notifyEventMilestones'

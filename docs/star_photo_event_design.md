@@ -208,6 +208,8 @@ stateDiagram-v2
 
 ## 11. カレンダー登録
 
+機能スイッチ `APP_CONFIG.FEATURES.CALENDAR_SYNC_ENABLED` で有効・無効を制御する。初期値は `false` とし、無効時はメニュー項目を表示せず、`registerEventSlotsToCalendar()` を直接実行しても登録・削除を行わない。
+
 Script Properties の `CALENDAR_ID` を使用する。開催日時とタイトルがあり、イベントIDが空の開催枠だけを手動関数 `registerEventSlotsToCalendar()` で新規登録する。イベントIDの有無だけで重複を防ぎ、カレンダー内の同日時・同タイトル検索は行わない。
 
 `カレンダー登録状況` と `イベントID` は開催日管理を正とする。申込管理にはどちらも持たない。
