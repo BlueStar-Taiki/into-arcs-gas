@@ -4,10 +4,11 @@
     <base target="_top">
     <style>
       body { font-family: sans-serif; color: #202124; padding: 8px 16px; }
-      dl { display: grid; grid-template-columns: 120px 1fr; gap: 6px; }
+      dl { display: grid; grid-template-columns: 150px 1fr; gap: 6px; }
       dt { font-weight: 600; }
       dd { margin: 0; }
-      .names { max-height: 230px; overflow: auto; background: #f8f9fa; padding: 8px 12px; }
+      .names { max-height: 150px; overflow: auto; background: #f8f9fa; padding: 8px 12px; }
+      .warning { color: #b3261e; }
       .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
       button { padding: 8px 20px; }
       #message { white-space: pre-wrap; color: #b3261e; margin-top: 12px; }
@@ -19,10 +20,14 @@
       <dt>開催タイトル</dt><dd id="title"></dd>
       <dt>申し込み日時</dt><dd id="date"></dd>
       <dt>変更後</dt><dd id="status"></dd>
-      <dt>送信対象者数</dt><dd id="count"></dd>
+      <dt>参加者向け対象者数</dt><dd id="participantCount"></dd>
+      <dt>ガイド向け対象者数</dt><dd id="guideCount"></dd>
     </dl>
-    <p>送信対象者</p>
-    <ul id="names" class="names"></ul>
+    <p>参加者</p>
+    <ul id="participantNames" class="names"></ul>
+    <p>ガイド</p>
+    <ul id="guideNames" class="names"></ul>
+    <ul id="guideWarnings" class="warning"></ul>
     <div id="message"></div>
     <div class="actions">
       <button id="no" onclick="cancelChange()">いいえ</button>
@@ -36,12 +41,14 @@
       document.getElementById('title').textContent = context.title;
       document.getElementById('date').textContent = context.applicationDate;
       document.getElementById('status').textContent = context.newStatus;
-      document.getElementById('count').textContent =
+      document.getElementById('participantCount').textContent =
         context.participantNames.length + '名';
-      const names = document.getElementById('names');
+      document.getElementById('guideCount').textContent =
+        (context.guideNames || []).length + '名';
+      const names = document.getElementById('participantNames');
       if (!context.participantNames.length) {
         const item = document.createElement('li');
-        item.textContent = '送信対象者はいません（メールなしで確定します）';
+        item.textContent = '送信対象者はいません';
         names.appendChild(item);
       } else {
         context.participantNames.forEach(function (name) {
@@ -50,6 +57,24 @@
           names.appendChild(item);
         });
       }
+      const guideNames = document.getElementById('guideNames');
+      if (!context.guideNames || !context.guideNames.length) {
+        const item = document.createElement('li');
+        item.textContent = '送信対象ガイドはいません';
+        guideNames.appendChild(item);
+      } else {
+        context.guideNames.forEach(function (name) {
+          const item = document.createElement('li');
+          item.textContent = name;
+          guideNames.appendChild(item);
+        });
+      }
+      const guideWarnings = document.getElementById('guideWarnings');
+      (context.guideWarnings || []).forEach(function (warning) {
+        const item = document.createElement('li');
+        item.textContent = warning;
+        guideWarnings.appendChild(item);
+      });
 
       function disableButtons() {
         document.getElementById('yes').disabled = true;

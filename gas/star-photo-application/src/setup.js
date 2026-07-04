@@ -33,6 +33,7 @@ function setupApplicationFormSheet() {
     APP_CONFIG.SHEETS.SETTINGS,
     APP_CONFIG.SETTINGS_HEADER_ORDER
   );
+  var guideSheet = setupGuideSheet_(spreadsheet);
   var eventDateSheet = ensureSheetWithHeaders_(
     spreadsheet,
     APP_CONFIG.SHEETS.EVENT_DATES,
@@ -46,6 +47,7 @@ function setupApplicationFormSheet() {
 
   configureApplicationSheet_(applicationSheet);
   configureSettingsSheet_(settingsSheet);
+  configureGuideSheet_(guideSheet);
   configureLogSheet_(logSheet);
   configureEventDateSheet_(eventDateSheet);
   seedEventDiscordStatuses_(eventDateSheet);
@@ -256,6 +258,8 @@ function checkApplicationFormSetup() {
     APP_CONFIG.MAIL_TEMPLATE_HEADER_ORDER;
   sheetDefinitions[APP_CONFIG.SHEETS.SETTINGS] =
     APP_CONFIG.SETTINGS_HEADER_ORDER;
+  sheetDefinitions[APP_CONFIG.SHEETS.GUIDES] =
+    APP_CONFIG.GUIDE_HEADER_ORDER;
   sheetDefinitions[APP_CONFIG.SHEETS.LOGS] = APP_CONFIG.LOG_HEADER_ORDER;
 
   Object.keys(sheetDefinitions).forEach(function (sheetName) {
@@ -590,6 +594,15 @@ function ensureSheetWithHeaders_(spreadsheet, sheetName, headers) {
   return sheet;
 }
 
+function setupGuideSheet_(spreadsheet) {
+  spreadsheet = spreadsheet || getApplicationSpreadsheet_();
+  return ensureSheetWithHeaders_(
+    spreadsheet,
+    APP_CONFIG.SHEETS.GUIDES,
+    APP_CONFIG.GUIDE_HEADER_ORDER
+  );
+}
+
 function configureApplicationSheet_(sheet) {
   var headerMap = getHeaderMap_(sheet);
   var widths = {};
@@ -656,6 +669,26 @@ function configureSettingsSheet_(sheet) {
   sheet.setColumnWidth(headerMap[APP_CONFIG.SETTINGS_HEADERS.KEY], 180);
   sheet.setColumnWidth(headerMap[APP_CONFIG.SETTINGS_HEADERS.VALUE], 300);
   sheet.setColumnWidth(headerMap[APP_CONFIG.SETTINGS_HEADERS.DESCRIPTION], 420);
+}
+
+function configureGuideSheet_(sheet) {
+  var headerMap = getHeaderMap_(sheet);
+  var headers = APP_CONFIG.GUIDE_HEADERS;
+  var widths = {};
+  widths[headers.NAME] = 160;
+  widths[headers.EMAIL] = 240;
+  widths[headers.ATTENDANCE_KEY] = 180;
+  widths[headers.ATTENDANCE_TARGET] = 140;
+  widths[headers.NOTE] = 320;
+  Object.keys(widths).forEach(function (header) {
+    sheet.setColumnWidth(headerMap[header], widths[header]);
+  });
+  setDropdown_(
+    sheet,
+    headerMap[headers.ATTENDANCE_TARGET],
+    APP_CONFIG.ATTENDANCE_TARGET_STATUS_OPTIONS
+  );
+  ensureBasicFilter_(sheet, APP_CONFIG.GUIDE_HEADER_ORDER.length);
 }
 
 function configureLogSheet_(sheet) {
@@ -774,6 +807,14 @@ function configureEventDateSheet_(sheet) {
       )
       .setNumberFormat('#,##0');
   });
+  sheet
+    .getRange(
+      APP_CONFIG.DATA_START_ROW,
+      headerMap[headers.PREVIOUS_EXECUTION_STATUS],
+      APP_CONFIG.VALIDATION_ROW_COUNT,
+      1
+    )
+    .clearDataValidations();
   ensureBasicFilter_(sheet, APP_CONFIG.EVENT_DATE_HEADER_ORDER.length);
   sheet.hideColumns(headerMap[headers.PREVIOUS_EXECUTION_STATUS]);
 }

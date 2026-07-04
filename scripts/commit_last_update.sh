@@ -2,9 +2,10 @@
 
 set -eu
 
-REPO_DIR="/Users/bluestar/system/into-arcs/into-arcs-gas"
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+REPO_DIR=$(CDPATH= cd -- "${SCRIPT_DIR}/.." && pwd)
 GAS_PROJECT_DIR="${REPO_DIR}/gas/star-photo-application"
-COMMIT_MESSAGE="feat: add confirmed event status mail workflow"
+COMMIT_MESSAGE="feat: add guide status mail workflow"
 
 echo "[1/9] Moving to repository: ${REPO_DIR}"
 cd "${REPO_DIR}"

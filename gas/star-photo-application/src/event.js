@@ -48,6 +48,22 @@ function getEventSlots_() {
         ),
         receptionStartTime:
           row[headerMap[headers.RECEPTION_START_TIME] - 1],
+        assignee: String(row[headerMap[headers.ASSIGNEE] - 1] || ''),
+        participatingCount: toNonNegativeInteger_(
+          row[headerMap[headers.PARTICIPATING] - 1]
+        ) || 0,
+        waitlistedCount: toNonNegativeInteger_(
+          row[headerMap[headers.WAITLISTED] - 1]
+        ) || 0,
+        canceledCount: toNonNegativeInteger_(
+          row[headerMap[headers.CANCELED] - 1]
+        ) || 0,
+        declinedCount: toNonNegativeInteger_(
+          row[headerMap[headers.DECLINED] - 1]
+        ) || 0,
+        totalApplicationParticipants: toNonNegativeInteger_(
+          row[headerMap[headers.TOTAL_APPLICATION_PARTICIPANTS] - 1]
+        ) || 0,
         recruitmentStatus: String(
           row[headerMap[headers.RECRUITMENT_STATUS] - 1] || ''
         ),
