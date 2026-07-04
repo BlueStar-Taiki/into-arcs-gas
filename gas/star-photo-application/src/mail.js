@@ -111,41 +111,49 @@ function sendTemplatedApplicationMail_(application) {
         application[headers.EVENT_SLOT_KEY]
     );
   }
-  var participantCount = Number(application[headers.PARTICIPANTS]);
-  var replyTo =
-    settings[APP_CONFIG.SETTING_KEYS.REPLY_TO_EMAIL] || '';
   var placeholders = APP_CONFIG.MAIL_PLACEHOLDERS;
-  var context = {};
-  context[placeholders.NAME] = application[headers.NAME];
-  context[placeholders.APPLICATION_DATE] = formatDateTime_(
-    application[headers.APPLICATION_DATE]
+  var context = buildApplicationEventMailContext_(
+    application,
+    eventSlot,
+    settings
   );
-  context[placeholders.TITLE] = application[headers.TITLE];
-  context[placeholders.PARTICIPANTS] = participantCount;
-  context[placeholders.PRICE_PER_PERSON] = eventSlot.pricePerPerson;
-  context[placeholders.TOTAL_PRICE] =
-    eventSlot.pricePerPerson * participantCount;
-  context[placeholders.RECEPTION_START_TIME] = formatReceptionTime_(
-    eventSlot.receptionStartTime
-  );
-  context[placeholders.STATUS] = application[headers.STATUS];
-  context[placeholders.CONTACT_NAME] =
-    settings[APP_CONFIG.SETTING_KEYS.CONTACT_NAME] ||
-    APP_CONFIG.INITIAL_SETTINGS[1][1];
-  context[placeholders.REPLY_TO_EMAIL] = replyTo;
 
   var subject = renderMailTemplate_(subjectTemplate, context);
-  var body = renderMailTemplate_(bodyTemplate, context);
+  var body = appendPaymentInstructionIfNeeded_(
+    renderMailTemplate_(bodyTemplate, context),
+    application[headers.STATUS],
+    context
+  );
   var options = {
     to: recipient,
     subject: subject,
     body: body,
     name: context[placeholders.CONTACT_NAME]
   };
-  if (replyTo) {
-    options.replyTo = replyTo;
+  if (context[placeholders.REPLY_TO_EMAIL]) {
+    options.replyTo = context[placeholders.REPLY_TO_EMAIL];
   }
   MailApp.sendEmail(options);
+}
+
+function appendPaymentInstructionIfNeeded_(body, status, context) {
+  var paymentLink = context[APP_CONFIG.MAIL_PLACEHOLDERS.PAYMENT_LINK];
+  if (
+    status !== APP_CONFIG.EVENT_APPLICATION_STATUS.PARTICIPATING ||
+    !paymentLink ||
+    String(body).indexOf(paymentLink) !== -1
+  ) {
+    return body;
+  }
+  return (
+    body +
+    '\n\n参加費はクレジットカードによる事前払い制です。' +
+    '\n以下のお支払いリンクを開き、金額欄に' +
+    context[APP_CONFIG.MAIL_PLACEHOLDERS.TOTAL_PRICE] +
+    '円と入力してお支払いください。' +
+    '\n' +
+    paymentLink
+  );
 }
 
 function getApplicationTemplateKeys_(status) {
@@ -172,6 +180,78 @@ function getApplicationTemplateKeys_(status) {
   throw new Error(
     APP_CONFIG.TEXT.APPLICATION_MAIL_STATUS_UNSUPPORTED_PREFIX + status
   );
+}
+
+function getPaymentConfirmedTemplateKeys_() {
+  var keys = APP_CONFIG.MAIL_TEMPLATE_KEYS;
+  return {
+    subject: keys.PAYMENT_CONFIRMED_SUBJECT,
+    body: keys.PAYMENT_CONFIRMED_BODY
+  };
+}
+
+function sendPaymentConfirmationMail_(application) {
+  var headers = APP_CONFIG.APPLICATION_HEADERS;
+  var recipient = String(application[headers.EMAIL] || '').trim();
+  if (!recipient) {
+    throw new Error(APP_CONFIG.TEXT.EMAIL_EMPTY);
+  }
+  var eventSlot = getEventSlots_().filter(function (slot) {
+    return slot.key === application[headers.EVENT_SLOT_KEY];
+  })[0];
+  if (!eventSlot) {
+    throw new Error(
+      APP_CONFIG.TEXT.EVENT_SLOT_NOT_FOUND_PREFIX +
+        application[headers.EVENT_SLOT_KEY]
+    );
+  }
+  var templates = getMailTemplates_();
+  var templateKeys = getPaymentConfirmedTemplateKeys_();
+  var subjectTemplate = requireMailTemplate_(templates, templateKeys.subject);
+  var bodyTemplate = requireMailTemplate_(templates, templateKeys.body);
+  var settings = getSettings_();
+  var context = buildApplicationEventMailContext_(
+    application,
+    eventSlot,
+    settings
+  );
+  var options = {
+    to: recipient,
+    subject: renderMailTemplate_(subjectTemplate, context),
+    body: renderMailTemplate_(bodyTemplate, context),
+    name: context[APP_CONFIG.MAIL_PLACEHOLDERS.CONTACT_NAME]
+  };
+  if (context[APP_CONFIG.MAIL_PLACEHOLDERS.REPLY_TO_EMAIL]) {
+    options.replyTo = context[APP_CONFIG.MAIL_PLACEHOLDERS.REPLY_TO_EMAIL];
+  }
+  MailApp.sendEmail(options);
+}
+
+function buildApplicationEventMailContext_(application, eventSlot, settings) {
+  var headers = APP_CONFIG.APPLICATION_HEADERS;
+  var placeholders = APP_CONFIG.MAIL_PLACEHOLDERS;
+  var participantCount = Number(application[headers.PARTICIPANTS]) || 0;
+  var context = {};
+  context[placeholders.NAME] = application[headers.NAME];
+  context[placeholders.APPLICATION_DATE] = formatDateTime_(
+    application[headers.APPLICATION_DATE]
+  );
+  context[placeholders.TITLE] = application[headers.TITLE];
+  context[placeholders.PARTICIPANTS] = participantCount;
+  context[placeholders.PRICE_PER_PERSON] = eventSlot.pricePerPerson;
+  context[placeholders.TOTAL_PRICE] =
+    eventSlot.pricePerPerson * participantCount;
+  context[placeholders.PAYMENT_LINK] =
+    settings[APP_CONFIG.SETTING_KEYS.PAYMENT_LINK] || '';
+  context[placeholders.RECEPTION_START_TIME] =
+    formatReceptionTime_(eventSlot.receptionStartTime);
+  context[placeholders.STATUS] = application[headers.STATUS];
+  context[placeholders.CONTACT_NAME] =
+    settings[APP_CONFIG.SETTING_KEYS.CONTACT_NAME] ||
+    APP_CONFIG.INITIAL_SETTINGS[1][1];
+  context[placeholders.REPLY_TO_EMAIL] =
+    settings[APP_CONFIG.SETTING_KEYS.REPLY_TO_EMAIL] || '';
+  return context;
 }
 
 function getMailTemplates_() {
@@ -244,6 +324,57 @@ function formatReceptionTime_(value) {
     );
   }
   return String(value || '');
+}
+
+function isPaymentStatusPaidEdit_(e) {
+  if (!e || !e.range || e.range.getNumRows() !== 1 ||
+      e.range.getNumColumns() !== 1) {
+    return false;
+  }
+  var sheet = e.range.getSheet();
+  if (
+    sheet.getName() !== APP_CONFIG.SHEETS.APPLICATIONS ||
+    e.range.getRow() < APP_CONFIG.DATA_START_ROW
+  ) {
+    return false;
+  }
+  var headerMap = getHeaderMap_(sheet);
+  return (
+    e.range.getColumn() ===
+      headerMap[APP_CONFIG.APPLICATION_HEADERS.PAYMENT_STATUS] &&
+    String(e.value || '') === APP_CONFIG.PAYMENT_STATUS.PAID &&
+    String(e.value || '') !== String(e.oldValue || '')
+  );
+}
+
+function handlePaymentStatusPaidEdit_(e) {
+  var rowNumber = e.range.getRow();
+  var application = getApplicationByRow_(rowNumber);
+  try {
+    sendPaymentConfirmationMail_(application);
+    appendLog_(
+      APP_CONFIG.LOG_LEVEL.INFO,
+      APP_CONFIG.PROCESS.PAYMENT_CONFIRMATION_MAIL,
+      application[APP_CONFIG.APPLICATION_HEADERS.APPLICATION_ID],
+      APP_CONFIG.TEXT.PAYMENT_CONFIRMATION_MAIL_SENT,
+      ''
+    );
+  } catch (error) {
+    var normalized = normalizeError_(error);
+    appendLog_(
+      APP_CONFIG.LOG_LEVEL.ERROR,
+      APP_CONFIG.PROCESS.PAYMENT_CONFIRMATION_MAIL,
+      application[APP_CONFIG.APPLICATION_HEADERS.APPLICATION_ID],
+      APP_CONFIG.TEXT.PAYMENT_CONFIRMATION_MAIL_FAILED,
+      normalized.detail || normalized.message
+    );
+    showUiAlert_(
+      APP_CONFIG.TEXT.PAYMENT_CONFIRMATION_MAIL_FAILED +
+        ' ' +
+        normalized.message
+    );
+    throw error;
+  }
 }
 
 function resendConfirmationMailForActiveRow() {

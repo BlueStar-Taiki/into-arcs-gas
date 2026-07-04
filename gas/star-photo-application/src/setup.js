@@ -47,6 +47,7 @@ function setupApplicationFormSheet() {
   );
 
   configureApplicationSheet_(applicationSheet);
+  seedApplicationPaymentStatuses_(applicationSheet);
   configureSettingsSheet_(settingsSheet);
   configureGuideSheet_(guideSheet);
   configureParticipantRosterSheet_(participantRosterSheet);
@@ -627,6 +628,7 @@ function configureApplicationSheet_(sheet) {
   widths[APP_CONFIG.APPLICATION_HEADERS.EMAIL] = 220;
   widths[APP_CONFIG.APPLICATION_HEADERS.STATUS] = 110;
   widths[APP_CONFIG.APPLICATION_HEADERS.MAIL_STATUS] = 120;
+  widths[APP_CONFIG.APPLICATION_HEADERS.PAYMENT_STATUS] = 120;
   widths[APP_CONFIG.APPLICATION_HEADERS.INTERNAL_NOTE] = 260;
   widths[APP_CONFIG.APPLICATION_HEADERS.UPDATED_AT] = 150;
   widths[APP_CONFIG.APPLICATION_HEADERS.APPLICATION_DATE] = 170;
@@ -646,6 +648,11 @@ function configureApplicationSheet_(sheet) {
     headerMap[APP_CONFIG.APPLICATION_HEADERS.MAIL_STATUS],
     APP_CONFIG.MAIL_STATUS_OPTIONS
   );
+  setDropdown_(
+    sheet,
+    headerMap[APP_CONFIG.APPLICATION_HEADERS.PAYMENT_STATUS],
+    APP_CONFIG.PAYMENT_STATUS_OPTIONS
+  );
   [
     APP_CONFIG.APPLICATION_HEADERS.RECEIVED_AT,
     APP_CONFIG.APPLICATION_HEADERS.UPDATED_AT,
@@ -659,6 +666,34 @@ function configureApplicationSheet_(sheet) {
         1
       )
       .setNumberFormat(APP_CONFIG.DATE_FORMAT);
+  });
+}
+
+function seedApplicationPaymentStatuses_(sheet) {
+  if (sheet.getLastRow() < APP_CONFIG.DATA_START_ROW) {
+    return;
+  }
+  var headerMap = getHeaderMap_(sheet);
+  var headers = APP_CONFIG.APPLICATION_HEADERS;
+  var values = sheet
+    .getRange(
+      APP_CONFIG.DATA_START_ROW,
+      APP_CONFIG.FIRST_COLUMN,
+      sheet.getLastRow() - APP_CONFIG.HEADER_ROW,
+      sheet.getLastColumn()
+    )
+    .getValues();
+  values.forEach(function (row, index) {
+    var applicationId = row[headerMap[headers.APPLICATION_ID] - 1];
+    var paymentStatus = row[headerMap[headers.PAYMENT_STATUS] - 1];
+    if (applicationId && !paymentStatus) {
+      sheet
+        .getRange(
+          APP_CONFIG.DATA_START_ROW + index,
+          headerMap[headers.PAYMENT_STATUS]
+        )
+        .setValue(APP_CONFIG.PAYMENT_STATUS.UNPAID);
+    }
   });
 }
 

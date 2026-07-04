@@ -2,6 +2,10 @@
  * インストール型編集トリガーの入口。ここではメールを送信しない。
  */
 function onEventStatusEdit(e) {
+  if (isPaymentStatusPaidEdit_(e)) {
+    handlePaymentStatusPaidEdit_(e);
+    return;
+  }
   if (!isEventStatusEdit_(e)) {
     return;
   }

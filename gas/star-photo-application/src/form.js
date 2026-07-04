@@ -86,6 +86,8 @@ function onFormSubmit(e) {
     );
     application[applicationHeaders.MAIL_STATUS] =
       APP_CONFIG.MAIL_STATUS.UNSENT;
+    application[applicationHeaders.PAYMENT_STATUS] =
+      APP_CONFIG.PAYMENT_STATUS.UNPAID;
     application[applicationHeaders.INTERNAL_NOTE] = '';
     application[applicationHeaders.UPDATED_AT] = new Date();
 

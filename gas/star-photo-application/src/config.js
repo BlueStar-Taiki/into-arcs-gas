@@ -55,6 +55,7 @@ var APP_CONFIG = Object.freeze({
     EMAIL: 'メールアドレス',
     STATUS: 'ステータス',
     MAIL_STATUS: 'メール送信状況',
+    PAYMENT_STATUS: 'お支払い',
     INTERNAL_NOTE: '内部メモ',
     UPDATED_AT: '最終更新日時',
     APPLICATION_DATE: '申し込み日時',
@@ -70,6 +71,7 @@ var APP_CONFIG = Object.freeze({
     'メールアドレス',
     'ステータス',
     'メール送信状況',
+    'お支払い',
     '内部メモ',
     '最終更新日時',
     '申し込み日時',
@@ -245,6 +247,14 @@ var APP_CONFIG = Object.freeze({
     ERROR: '送信エラー'
   }),
   MAIL_STATUS_OPTIONS: Object.freeze(['未送信', '送信済み', '送信エラー']),
+  PAYMENT_STATUS: Object.freeze({
+    UNPAID: '未払い',
+    PAID: 'お支払い済み'
+  }),
+  PAYMENT_STATUS_OPTIONS: Object.freeze([
+    '未払い',
+    'お支払い済み'
+  ]),
   DISCORD_STATUS: Object.freeze({
     UNNOTIFIED: '未通知',
     MINIMUM_NOTIFIED: '最小催行人数到達通知済み',
@@ -310,6 +320,7 @@ var APP_CONFIG = Object.freeze({
     DISCORD_FIVE_DAYS: 'notifyUpcomingEventFiveDaysBefore',
     EVENT_STATUS_MAIL: 'eventStatusMail',
     EVENT_STATUS_EDIT: 'onEventStatusEdit',
+    PAYMENT_CONFIRMATION_MAIL: 'paymentConfirmationMail',
     EVENT_AGGREGATION: 'recalculateEventDateAggregates',
     FORM_CHOICES: 'updateApplicationFormChoices',
     FORM_SUBMIT: 'onFormSubmit',
@@ -336,6 +347,7 @@ var APP_CONFIG = Object.freeze({
     DISCORD_MENTION: 'DISCORD_MENTION',
     CAPACITY_OVERBOOK_ALLOWANCE: 'CAPACITY_OVERBOOK_ALLOWANCE',
     LOW_REMAINING_THRESHOLD: 'LOW_REMAINING_THRESHOLD',
+    PAYMENT_LINK: 'PAYMENT_LINK',
     PARTICIPANT_ROSTER_FOLDER_ID: 'PARTICIPANT_ROSTER_FOLDER_ID'
   }),
   INITIAL_SETTINGS: Object.freeze([
@@ -345,6 +357,7 @@ var APP_CONFIG = Object.freeze({
     Object.freeze(['DISCORD_MENTION', '', 'Discord通知の先頭に付けるメンション（任意）']),
     Object.freeze(['CAPACITY_OVERBOOK_ALLOWANCE', '2', '新規申込を参加扱いにできる定員超過の許容人数']),
     Object.freeze(['LOW_REMAINING_THRESHOLD', '4', 'フォーム候補で「残りわずか」と表示する残席数のしきい値']),
+    Object.freeze(['PAYMENT_LINK', 'https://square.link/u/QV4hDXJm', '参加費の事前決済用Squareリンク']),
     Object.freeze(['PARTICIPANT_ROSTER_FOLDER_ID', '18KDES6jvJMtUUccuS4cpISaZSMZ-5yZ3', '参加者名簿PDFの保存先Google DriveフォルダID'])
   ]),
   MAIL_TEMPLATE_KEYS: Object.freeze({
@@ -354,6 +367,8 @@ var APP_CONFIG = Object.freeze({
     APPLICATION_WAITLIST_BODY: 'application_waitlist_body',
     APPLICATION_DECLINED_SUBJECT: 'application_declined_subject',
     APPLICATION_DECLINED_BODY: 'application_declined_body',
+    PAYMENT_CONFIRMED_SUBJECT: 'payment_confirmed_subject',
+    PAYMENT_CONFIRMED_BODY: 'payment_confirmed_body',
     EVENT_CONFIRMED_SUBJECT: 'event_confirmed_subject',
     EVENT_CONFIRMED_BODY: 'event_confirmed_body',
     EVENT_RAIN_CANCEL_SUBJECT: 'event_rain_cancel_subject',
@@ -382,6 +397,7 @@ var APP_CONFIG = Object.freeze({
     MINIMUM_PARTICIPANTS: '最小催行人数',
     PRICE_PER_PERSON: '一人当たりの料金',
     TOTAL_PRICE: '合計料金',
+    PAYMENT_LINK: 'お支払いリンク',
     RECEPTION_START_TIME: '受付開始時間',
     STATUS: 'ステータス',
     CONTACT_NAME: '主催者名',
@@ -393,11 +409,13 @@ var APP_CONFIG = Object.freeze({
   }),
   INITIAL_MAIL_TEMPLATES: Object.freeze([
     Object.freeze(['application_participation_subject', '【{{タイトル}}】参加受付のお知らせ', '参加受付メール件名']),
-    Object.freeze(['application_participation_body', '{{お名前}} 様\n\n{{申し込み日時}}の{{タイトル}}を「参加」で受け付けました。\n参加人数: {{参加人数}}名\n合計料金: {{合計料金}}円\n受付開始時間: {{受付開始時間}}\n\n{{主催者名}}', '参加受付メール本文']),
+    Object.freeze(['application_participation_body', '{{お名前}} 様\n\n{{申し込み日時}}の{{タイトル}}を「参加」で受け付けました。\n参加人数: {{参加人数}}名\n合計料金: {{合計料金}}円\n受付開始時間: {{受付開始時間}}\n\n参加費はクレジットカードによる事前払い制です。\n以下のお支払いリンクを開き、金額欄に{{合計料金}}円と入力してお支払いください。\n{{お支払いリンク}}\n\n{{主催者名}}', '参加受付メール本文']),
     Object.freeze(['application_waitlist_subject', '【{{タイトル}}】キャンセル待ち受付のお知らせ', 'キャンセル待ち受付メール件名']),
     Object.freeze(['application_waitlist_body', '{{お名前}} 様\n\n{{申し込み日時}}の{{タイトル}}を「キャンセル待ち」で受け付けました。\n参加人数: {{参加人数}}名\n\n空きが出た場合にご案内します。\n{{主催者名}}', 'キャンセル待ち受付メール本文']),
     Object.freeze(['application_declined_subject', '【{{タイトル}}】お申し込みについて', 'お断りメール件名']),
     Object.freeze(['application_declined_body', '{{お名前}} 様\n\n{{申し込み日時}}の{{タイトル}}は定員およびキャンセル待ち上限に達したため、今回はお受けできませんでした。\n\n{{主催者名}}', 'お断りメール本文']),
+    Object.freeze(['payment_confirmed_subject', '【{{タイトル}}】お支払い確認のお知らせ', 'お支払い確認メール件名']),
+    Object.freeze(['payment_confirmed_body', '{{お名前}} 様\n\nお支払いを確認しました。\n\nイベント: {{タイトル}}\n申し込み日時: {{申し込み日時}}\n参加人数: {{参加人数}}名\n一人当たりの料金: {{一人当たりの料金}}円\nお支払い金額: {{合計料金}}円\n受付開始時間: {{受付開始時間}}\n\n当日は受付開始時間にお越しください。\n\n{{主催者名}}', 'お支払い確認メール本文']),
     Object.freeze(['event_confirmed_subject', '【{{タイトル}}】開催決定のお知らせ', '開催決定メール件名']),
     Object.freeze(['event_confirmed_body', '{{お名前}} 様\n\n{{申し込み日時}}の{{タイトル}}は開催決定となりました。\n受付開始時間: {{受付開始時間}}\n\n{{主催者名}}', '開催決定メール本文']),
     Object.freeze(['event_rain_cancel_subject', '【{{タイトル}}】雨天中止のお知らせ', '雨天中止メール件名']),
@@ -526,6 +544,8 @@ var APP_CONFIG = Object.freeze({
     EVENT_STATUS_MAIL_SENT: '実施状況メールを送信し、変更を確定しました。',
     EVENT_STATUS_MAIL_NO_RECIPIENTS: '送信対象者がいないため、メールを送らず実施状況を確定しました。',
     EVENT_STATUS_MAIL_FAILED: '実施状況メールの送信に失敗したため、変更を元に戻しました。',
+    PAYMENT_CONFIRMATION_MAIL_SENT: 'お支払い確認メールを送信しました。',
+    PAYMENT_CONFIRMATION_MAIL_FAILED: 'お支払い確認メールの送信に失敗しました。',
     GUIDE_NOT_FOUND_PREFIX: '担当者が担当シートに見つかりません: ',
     GUIDE_EMAIL_EMPTY_PREFIX: '担当者のメールアドレスが未設定です: ',
     GUIDE_MAIL_NO_RECIPIENTS: 'ガイド送信対象なし',
