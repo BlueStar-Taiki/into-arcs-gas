@@ -88,6 +88,9 @@ function getEventSlots_() {
         fiveDaysNotificationStatus: String(
           row[headerMap[headers.FIVE_DAYS_NOTIFICATION] - 1] ||
             APP_CONFIG.NOTIFICATION_STATUS.UNNOTIFIED
+        ),
+        participantRosterUrl: String(
+          row[headerMap[headers.PARTICIPANT_ROSTER_URL] - 1] || ''
         )
       };
       if (

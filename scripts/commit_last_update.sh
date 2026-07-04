@@ -5,7 +5,7 @@ set -eu
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_DIR=$(CDPATH= cd -- "${SCRIPT_DIR}/.." && pwd)
 GAS_PROJECT_DIR="${REPO_DIR}/gas/star-photo-application"
-COMMIT_MESSAGE="feat: add guide status mail workflow"
+COMMIT_MESSAGE="feat: add participant roster pdf workflow"
 
 echo "[1/9] Moving to repository: ${REPO_DIR}"
 cd "${REPO_DIR}"
@@ -45,7 +45,6 @@ git add -- \
   gas/star-photo-application/src/config.js \
   gas/star-photo-application/src/event.js \
   gas/star-photo-application/src/eventStatusMail.js \
-  gas/star-photo-application/src/eventStatusMailConfirmDialog.html \
   gas/star-photo-application/src/setup.js \
   scripts/commit_last_update.sh
 

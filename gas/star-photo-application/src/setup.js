@@ -34,6 +34,7 @@ function setupApplicationFormSheet() {
     APP_CONFIG.SETTINGS_HEADER_ORDER
   );
   var guideSheet = setupGuideSheet_(spreadsheet);
+  var participantRosterSheet = setupParticipantRosterSheet_(spreadsheet);
   var eventDateSheet = ensureSheetWithHeaders_(
     spreadsheet,
     APP_CONFIG.SHEETS.EVENT_DATES,
@@ -48,6 +49,7 @@ function setupApplicationFormSheet() {
   configureApplicationSheet_(applicationSheet);
   configureSettingsSheet_(settingsSheet);
   configureGuideSheet_(guideSheet);
+  configureParticipantRosterSheet_(participantRosterSheet);
   configureLogSheet_(logSheet);
   configureEventDateSheet_(eventDateSheet);
   seedEventDiscordStatuses_(eventDateSheet);
@@ -260,6 +262,8 @@ function checkApplicationFormSetup() {
     APP_CONFIG.SETTINGS_HEADER_ORDER;
   sheetDefinitions[APP_CONFIG.SHEETS.GUIDES] =
     APP_CONFIG.GUIDE_HEADER_ORDER;
+  sheetDefinitions[APP_CONFIG.SHEETS.PARTICIPANT_ROSTER] =
+    APP_CONFIG.PARTICIPANT_ROSTER_HEADER_ORDER;
   sheetDefinitions[APP_CONFIG.SHEETS.LOGS] = APP_CONFIG.LOG_HEADER_ORDER;
 
   Object.keys(sheetDefinitions).forEach(function (sheetName) {
@@ -603,6 +607,15 @@ function setupGuideSheet_(spreadsheet) {
   );
 }
 
+function setupParticipantRosterSheet_(spreadsheet) {
+  spreadsheet = spreadsheet || getApplicationSpreadsheet_();
+  return ensureSheetWithHeaders_(
+    spreadsheet,
+    APP_CONFIG.SHEETS.PARTICIPANT_ROSTER,
+    APP_CONFIG.PARTICIPANT_ROSTER_HEADER_ORDER
+  );
+}
+
 function configureApplicationSheet_(sheet) {
   var headerMap = getHeaderMap_(sheet);
   var widths = {};
@@ -706,6 +719,30 @@ function configureGuideSheet_(sheet) {
   ensureBasicFilter_(sheet, APP_CONFIG.GUIDE_HEADER_ORDER.length);
 }
 
+function configureParticipantRosterSheet_(sheet) {
+  if (sheet.getMaxColumns() < 3) {
+    sheet.insertColumnsAfter(sheet.getMaxColumns(), 3 - sheet.getMaxColumns());
+  }
+  sheet.setColumnWidth(1, 60);
+  sheet.setColumnWidth(2, 220);
+  sheet.setColumnWidth(3, 90);
+  sheet
+    .getRange(1, 1, 1, 3)
+    .merge()
+    .setValue(APP_CONFIG.SHEETS.PARTICIPANT_ROSTER)
+    .setFontWeight('bold')
+    .setFontSize(16)
+    .setHorizontalAlignment('center');
+  sheet.getRange(2, 1).setValue('開催タイトル');
+  sheet.getRange(3, 1).setValue('申し込み日時');
+  sheet.getRange(4, 1).setValue('実施状況');
+  sheet
+    .getRange(APP_CONFIG.PARTICIPANT_ROSTER_START_ROW - 1, 1, 1, 3)
+    .setValues([['No', 'お名前', '人数']])
+    .setFontWeight('bold')
+    .setBackground('#d9eaf7');
+}
+
 function configureEventAssigneeDropdown_(sheet, headerMap) {
   var guideSheet = getRequiredSheet_(APP_CONFIG.SHEETS.GUIDES);
   var guideHeaderMap = getHeaderMap_(guideSheet);
@@ -776,6 +813,7 @@ function configureEventDateSheet_(sheet) {
   widths[headers.MINIMUM_NOTIFICATION] = 150;
   widths[headers.WAITLIST_NOTIFICATION] = 150;
   widths[headers.FIVE_DAYS_NOTIFICATION] = 110;
+  widths[headers.PARTICIPANT_ROSTER_URL] = 240;
   widths[headers.PREVIOUS_EXECUTION_STATUS] = 140;
   Object.keys(widths).forEach(function (header) {
     sheet.setColumnWidth(headerMap[header], widths[header]);

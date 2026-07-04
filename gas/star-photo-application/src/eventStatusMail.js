@@ -101,7 +101,9 @@ function showEventStatusMailConfirmationDialog_(context) {
   );
 }
 
-function getParticipantApplicationsForEventSlot_(eventSlotKey) {
+function getParticipantApplicationsForEventSlot_(eventSlotKey, requireEmail) {
+  requireEmail =
+    typeof requireEmail === 'undefined' ? true : Boolean(requireEmail);
   var sheet = getRequiredSheet_(APP_CONFIG.SHEETS.APPLICATIONS);
   var headerMap = getHeaderMap_(sheet);
   assertHeaders_(
@@ -127,7 +129,8 @@ function getParticipantApplicationsForEventSlot_(eventSlotKey) {
           String(eventSlotKey) &&
         row[headerMap[headers.STATUS] - 1] ===
           APP_CONFIG.EVENT_APPLICATION_STATUS.PARTICIPATING &&
-        String(row[headerMap[headers.EMAIL] - 1] || '').trim()
+        (!requireEmail ||
+          String(row[headerMap[headers.EMAIL] - 1] || '').trim())
       );
     })
     .map(function (row) {
@@ -296,6 +299,8 @@ function buildEventStatusMailContext_(application, slot, status, settings) {
     APP_CONFIG.INITIAL_SETTINGS[1][1];
   context[placeholders.REPLY_TO_EMAIL] =
     settings[APP_CONFIG.SETTING_KEYS.REPLY_TO_EMAIL] || '';
+  context[placeholders.PARTICIPANT_ROSTER_URL] =
+    eventRowObject.participantRosterUrl || '';
   return context;
 }
 
@@ -411,7 +416,11 @@ function sendGuideStatusMailForSlot_(eventRowObject, status) {
       guide: guide,
       context: context,
       subject: renderMailTemplate_(subjectTemplate, context),
-      body: renderMailTemplate_(bodyTemplate, context)
+      body: appendParticipantRosterUrlIfNeeded_(
+        renderMailTemplate_(bodyTemplate, context),
+        status,
+        context
+      )
     };
   });
   prepared.forEach(function (mail) {
@@ -438,6 +447,19 @@ function sendGuideStatusMail_(guide, context, subject, body) {
   MailApp.sendEmail(options);
 }
 
+function appendParticipantRosterUrlIfNeeded_(body, status, context) {
+  var rosterUrl =
+    context[APP_CONFIG.MAIL_PLACEHOLDERS.PARTICIPANT_ROSTER_URL];
+  if (
+    status !== APP_CONFIG.EXECUTION_STATUS.CONFIRMED ||
+    !rosterUrl ||
+    String(body).indexOf(rosterUrl) !== -1
+  ) {
+    return body;
+  }
+  return body + '\n\n参加者名簿: ' + rosterUrl;
+}
+
 function buildGuideStatusPreviewData_(eventRowObject) {
   var guideResult = getGuidesForEventSlot_(eventRowObject);
   var warnings = [];
@@ -453,6 +475,107 @@ function buildGuideStatusPreviewData_(eventRowObject) {
     }),
     warnings: warnings
   };
+}
+
+function ensureParticipantRosterForStatus_(slot, status, applications) {
+  if (status !== APP_CONFIG.EXECUTION_STATUS.CONFIRMED) {
+    return slot.participantRosterUrl || '';
+  }
+  if (slot.participantRosterUrl) {
+    return slot.participantRosterUrl;
+  }
+  var rosterUrl = createParticipantRosterPdf_(slot, applications);
+  setEventSlotField_(
+    slot.rowNumber,
+    APP_CONFIG.EVENT_DATE_HEADERS.PARTICIPANT_ROSTER_URL,
+    rosterUrl
+  );
+  slot.participantRosterUrl = rosterUrl;
+  appendLog_(
+    APP_CONFIG.LOG_LEVEL.INFO,
+    APP_CONFIG.PROCESS.EVENT_STATUS_MAIL,
+    slot.key,
+    APP_CONFIG.TEXT.PARTICIPANT_ROSTER_CREATED,
+    rosterUrl
+  );
+  return rosterUrl;
+}
+
+function createParticipantRosterPdf_(slot, applications) {
+  var sheet = getParticipantRosterSheet_();
+  populateParticipantRosterSheet_(sheet, slot, applications);
+  SpreadsheetApp.flush();
+  var spreadsheet = getApplicationSpreadsheet_();
+  var exportUrl =
+    'https://docs.google.com/spreadsheets/d/' +
+    spreadsheet.getId() +
+    '/export?format=pdf&gid=' +
+    sheet.getSheetId() +
+    '&size=A4&portrait=true&fitw=true&sheetnames=false&printtitle=false' +
+    '&pagenumbers=false&gridlines=false&fzr=false';
+  var response = UrlFetchApp.fetch(exportUrl, {
+    headers: {
+      Authorization: 'Bearer ' + ScriptApp.getOAuthToken()
+    }
+  });
+  var fileName = buildParticipantRosterFileName_(slot);
+  var file = DriveApp.createFile(response.getBlob().setName(fileName));
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return file.getUrl();
+}
+
+function getParticipantRosterSheet_() {
+  var sheet = getApplicationSpreadsheet_().getSheetByName(
+    APP_CONFIG.SHEETS.PARTICIPANT_ROSTER
+  );
+  if (!sheet) {
+    throw new Error(APP_CONFIG.TEXT.PARTICIPANT_ROSTER_TEMPLATE_MISSING);
+  }
+  return sheet;
+}
+
+function populateParticipantRosterSheet_(sheet, slot, applications) {
+  var headers = APP_CONFIG.APPLICATION_HEADERS;
+  var startRow = APP_CONFIG.PARTICIPANT_ROSTER_START_ROW;
+  sheet.getRange(2, 2).setValue(slot.title);
+  sheet.getRange(3, 2).setValue(formatDateTime_(slot.applicationDate));
+  sheet.getRange(4, 2).setValue(slot.executionStatus);
+  sheet
+    .getRange(startRow, 1, APP_CONFIG.VALIDATION_ROW_COUNT, 3)
+    .clearContent();
+  if (!applications.length) {
+    return;
+  }
+  var values = applications.map(function (application, index) {
+    return [
+      index + 1,
+      sanitizeForSheet_(application[headers.NAME] || ''),
+      Number(application[headers.PARTICIPANTS]) || 0
+    ];
+  });
+  sheet.getRange(startRow, 1, values.length, 3).setValues(values);
+}
+
+function buildParticipantRosterFileName_(slot) {
+  var datePart = Utilities.formatDate(
+    slot.applicationDate,
+    APP_CONFIG.TIME_ZONE,
+    'yyyyMMdd_HHmm'
+  );
+  return (
+    '参加者名簿_' +
+    datePart +
+    '_' +
+    sanitizeFileName_(slot.title) +
+    '.pdf'
+  );
+}
+
+function sanitizeFileName_(value) {
+  return String(value || '')
+    .replace(/[\\\/:*?"<>|#%\{\}~&]/g, '_')
+    .trim()
+    .slice(0, 80);
 }
 
 function logGuideResolutionWarnings_(eventSlotKey, guideResult) {
@@ -492,6 +615,11 @@ function sendEventStatusMailAfterConfirmation(eventSlotKey, newStatus) {
       throw new Error(APP_CONFIG.TEXT.EVENT_STATUS_MAIL_ALREADY_SENT);
     }
     var applications = getParticipantApplicationsForEventSlot_(eventSlotKey);
+    var rosterApplications = getParticipantApplicationsForEventSlot_(
+      eventSlotKey,
+      false
+    );
+    ensureParticipantRosterForStatus_(slot, newStatus, rosterApplications);
     var sentCount = sendEventStatusMailForSlot_(
       slot,
       newStatus,

@@ -18,6 +18,7 @@ var APP_CONFIG = Object.freeze({
     APPLICATIONS: '申込管理',
     EVENT_DATES: '開催日管理',
     GUIDES: '担当',
+    PARTICIPANT_ROSTER: '参加者名簿',
     MAIL_TEMPLATES: 'メールテンプレート',
     SETTINGS: '設定',
     LOGS: 'ログ'
@@ -95,6 +96,7 @@ var APP_CONFIG = Object.freeze({
     '出勤簿登録対象',
     'メモ'
   ]),
+  PARTICIPANT_ROSTER_HEADER_ORDER: Object.freeze(['参加者名簿']),
   EVENT_DATE_HEADERS: Object.freeze({
     APPLICATION_DATE: '申し込み日時',
     TITLE: 'タイトル',
@@ -123,6 +125,7 @@ var APP_CONFIG = Object.freeze({
     MINIMUM_NOTIFICATION: '最小催行通知',
     WAITLIST_NOTIFICATION: 'キャンセル待ち通知',
     FIVE_DAYS_NOTIFICATION: '5日前通知',
+    PARTICIPANT_ROSTER_URL: '参加者名簿URL',
     PREVIOUS_EXECUTION_STATUS: '前回実施状況'
   }),
   EVENT_DATE_HEADER_ORDER: Object.freeze([
@@ -153,6 +156,7 @@ var APP_CONFIG = Object.freeze({
     '最小催行通知',
     'キャンセル待ち通知',
     '5日前通知',
+    '参加者名簿URL',
     '前回実施状況'
   ]),
   MAIL_TEMPLATE_HEADERS: Object.freeze({
@@ -382,7 +386,8 @@ var APP_CONFIG = Object.freeze({
     REPLY_TO_EMAIL: '返信先メール',
     EXECUTION_STATUS: '実施状況',
     EVENT_AVAILABILITY: '開催可否',
-    CANCELLATION_REASON: '開催できない理由'
+    CANCELLATION_REASON: '開催できない理由',
+    PARTICIPANT_ROSTER_URL: '参加者名簿URL'
   }),
   INITIAL_MAIL_TEMPLATES: Object.freeze([
     Object.freeze(['application_participation_subject', '【{{タイトル}}】参加受付のお知らせ', '参加受付メール件名']),
@@ -400,7 +405,7 @@ var APP_CONFIG = Object.freeze({
     Object.freeze(['event_completed_subject', '【{{タイトル}}】開催終了のお知らせ', '開催済みメール件名']),
     Object.freeze(['event_completed_body', '{{お名前}} 様\n\n{{タイトル}}へご参加いただきありがとうございました。\n\n{{主催者名}}', '開催済みメール本文']),
     Object.freeze(['guide_event_confirmed_subject', '【{{タイトル}}】ガイド担当：開催決定のお知らせ', 'ガイド向け開催決定メール件名']),
-    Object.freeze(['guide_event_confirmed_body', '{{担当者名}} 様\n\n担当予定の{{申し込み日時}} {{タイトル}}は開催決定となりました。\n受付開始時間: {{受付開始時間}}\n実施状況: {{実施状況}}\n参加人数: {{参加人数}}名\nキャンセル待ち人数: {{キャンセル待ち人数}}名\n定員: {{定員}}名\n最小催行人数: {{最小催行人数}}名\n一人当たりの料金: {{一人当たりの料金}}円\n\n当日の実施準備をお願いします。\n\n{{主催者名}}', 'ガイド向け開催決定メール本文']),
+    Object.freeze(['guide_event_confirmed_body', '{{担当者名}} 様\n\n担当予定の{{申し込み日時}} {{タイトル}}は開催決定となりました。\n受付開始時間: {{受付開始時間}}\n実施状況: {{実施状況}}\n参加人数: {{参加人数}}名\nキャンセル待ち人数: {{キャンセル待ち人数}}名\n定員: {{定員}}名\n最小催行人数: {{最小催行人数}}名\n一人当たりの料金: {{一人当たりの料金}}円\n参加者名簿: {{参加者名簿URL}}\n\n当日の実施準備をお願いします。\n\n{{主催者名}}', 'ガイド向け開催決定メール本文']),
     Object.freeze(['guide_event_rain_cancel_subject', '【{{タイトル}}】ガイド担当：雨天中止のお知らせ', 'ガイド向け雨天中止メール件名']),
     Object.freeze(['guide_event_rain_cancel_body', '{{担当者名}} 様\n\n担当予定の{{申し込み日時}} {{タイトル}}は{{開催できない理由}}となりました。\n実施状況: {{実施状況}}\n参加人数: {{参加人数}}名\nキャンセル待ち人数: {{キャンセル待ち人数}}名\n最小催行人数: {{最小催行人数}}名\n\n当日の実施はありません。必要な確認があれば運営までご連絡ください。\n\n{{主催者名}}', 'ガイド向け雨天中止メール本文']),
     Object.freeze(['guide_event_insufficient_cancel_subject', '【{{タイトル}}】ガイド担当：開催中止のお知らせ', 'ガイド向け人数不足中止メール件名']),
@@ -522,7 +527,9 @@ var APP_CONFIG = Object.freeze({
     GUIDE_NOT_FOUND_PREFIX: '担当者が担当シートに見つかりません: ',
     GUIDE_EMAIL_EMPTY_PREFIX: '担当者のメールアドレスが未設定です: ',
     GUIDE_MAIL_NO_RECIPIENTS: 'ガイド送信対象なし',
-    GUIDE_MAIL_FAILED_PREFIX: 'ガイド向け実施状況メールに失敗しました: '
+    GUIDE_MAIL_FAILED_PREFIX: 'ガイド向け実施状況メールに失敗しました: ',
+    PARTICIPANT_ROSTER_CREATED: '参加者名簿PDFを作成しました。',
+    PARTICIPANT_ROSTER_TEMPLATE_MISSING: '参加者名簿シートがありません。setupを再実行してください。'
   }),
   FORM_CHOICE: Object.freeze({
     DATE_FORMAT: 'yyyy/MM/dd HH:mm',
@@ -542,6 +549,7 @@ var APP_CONFIG = Object.freeze({
   DAY_FORMAT: 'yyyy-MM-dd',
   DATE_FORMAT: 'yyyy/MM/dd HH:mm:ss',
   TIME_FORMAT: 'HH:mm',
+  PARTICIPANT_ROSTER_START_ROW: 6,
   CALENDAR_EVENT_DURATION_HOURS: 2,
   FIVE_DAYS_BEFORE_TRIGGER_HOUR: 9,
   UPCOMING_NOTIFICATION_DAYS_BEFORE: 5,
