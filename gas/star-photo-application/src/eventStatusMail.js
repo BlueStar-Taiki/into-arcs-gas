@@ -300,7 +300,7 @@ function buildEventStatusMailContext_(application, slot, status, settings) {
   context[placeholders.REPLY_TO_EMAIL] =
     settings[APP_CONFIG.SETTING_KEYS.REPLY_TO_EMAIL] || '';
   context[placeholders.PARTICIPANT_ROSTER_URL] =
-    eventRowObject.participantRosterUrl || '';
+    slot.participantRosterUrl || '';
   return context;
 }
 
