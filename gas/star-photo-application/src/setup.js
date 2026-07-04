@@ -664,6 +664,21 @@ function setDropdown_(sheet, column, options) {
     .setDataValidation(rule);
 }
 
+function setDropdownFromRange_(sheet, column, sourceRange, allowInvalid) {
+  var rule = SpreadsheetApp.newDataValidation()
+    .requireValueInRange(sourceRange, true)
+    .setAllowInvalid(Boolean(allowInvalid))
+    .build();
+  sheet
+    .getRange(
+      APP_CONFIG.DATA_START_ROW,
+      column,
+      APP_CONFIG.VALIDATION_ROW_COUNT,
+      1
+    )
+    .setDataValidation(rule);
+}
+
 function configureSettingsSheet_(sheet) {
   var headerMap = getHeaderMap_(sheet);
   sheet.setColumnWidth(headerMap[APP_CONFIG.SETTINGS_HEADERS.KEY], 180);
@@ -689,6 +704,27 @@ function configureGuideSheet_(sheet) {
     APP_CONFIG.ATTENDANCE_TARGET_STATUS_OPTIONS
   );
   ensureBasicFilter_(sheet, APP_CONFIG.GUIDE_HEADER_ORDER.length);
+}
+
+function configureEventAssigneeDropdown_(sheet, headerMap) {
+  var guideSheet = getRequiredSheet_(APP_CONFIG.SHEETS.GUIDES);
+  var guideHeaderMap = getHeaderMap_(guideSheet);
+  assertHeaders_(
+    guideHeaderMap,
+    APP_CONFIG.GUIDE_HEADER_ORDER,
+    APP_CONFIG.SHEETS.GUIDES
+  );
+  setDropdownFromRange_(
+    sheet,
+    headerMap[APP_CONFIG.EVENT_DATE_HEADERS.ASSIGNEE],
+    guideSheet.getRange(
+      APP_CONFIG.DATA_START_ROW,
+      guideHeaderMap[APP_CONFIG.GUIDE_HEADERS.NAME],
+      APP_CONFIG.VALIDATION_ROW_COUNT,
+      1
+    ),
+    true
+  );
 }
 
 function configureLogSheet_(sheet) {
@@ -770,6 +806,7 @@ function configureEventDateSheet_(sheet) {
     headerMap[headers.CALENDAR_STATUS],
     APP_CONFIG.CALENDAR_STATUS_OPTIONS
   );
+  configureEventAssigneeDropdown_(sheet, headerMap);
   [
     headers.MINIMUM_NOTIFICATION,
     headers.WAITLIST_NOTIFICATION,
