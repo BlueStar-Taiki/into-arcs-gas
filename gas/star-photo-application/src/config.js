@@ -335,7 +335,8 @@ var APP_CONFIG = Object.freeze({
     REPLY_TO_EMAIL: 'REPLY_TO_EMAIL',
     DISCORD_MENTION: 'DISCORD_MENTION',
     CAPACITY_OVERBOOK_ALLOWANCE: 'CAPACITY_OVERBOOK_ALLOWANCE',
-    LOW_REMAINING_THRESHOLD: 'LOW_REMAINING_THRESHOLD'
+    LOW_REMAINING_THRESHOLD: 'LOW_REMAINING_THRESHOLD',
+    PARTICIPANT_ROSTER_FOLDER_ID: 'PARTICIPANT_ROSTER_FOLDER_ID'
   }),
   INITIAL_SETTINGS: Object.freeze([
     Object.freeze(['EVENT_NAME', '星空撮影イベント', 'メール・通知に表示するイベント名']),
@@ -343,7 +344,8 @@ var APP_CONFIG = Object.freeze({
     Object.freeze(['REPLY_TO_EMAIL', '', '確認メールの返信先（空欄の場合は指定しない）']),
     Object.freeze(['DISCORD_MENTION', '', 'Discord通知の先頭に付けるメンション（任意）']),
     Object.freeze(['CAPACITY_OVERBOOK_ALLOWANCE', '2', '新規申込を参加扱いにできる定員超過の許容人数']),
-    Object.freeze(['LOW_REMAINING_THRESHOLD', '4', 'フォーム候補で「残りわずか」と表示する残席数のしきい値'])
+    Object.freeze(['LOW_REMAINING_THRESHOLD', '4', 'フォーム候補で「残りわずか」と表示する残席数のしきい値']),
+    Object.freeze(['PARTICIPANT_ROSTER_FOLDER_ID', '18KDES6jvJMtUUccuS4cpISaZSMZ-5yZ3', '参加者名簿PDFの保存先Google DriveフォルダID'])
   ]),
   MAIL_TEMPLATE_KEYS: Object.freeze({
     APPLICATION_PARTICIPATION_SUBJECT: 'application_participation_subject',

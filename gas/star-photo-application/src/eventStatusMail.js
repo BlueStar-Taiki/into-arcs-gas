@@ -519,9 +519,25 @@ function createParticipantRosterPdf_(slot, applications) {
     }
   });
   var fileName = buildParticipantRosterFileName_(slot);
-  var file = DriveApp.createFile(response.getBlob().setName(fileName));
+  var file = getParticipantRosterFolder_()
+    .createFile(response.getBlob().setName(fileName));
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
   return file.getUrl();
+}
+
+function getParticipantRosterFolder_() {
+  var settings = getSettings_();
+  var folderId =
+    settings[APP_CONFIG.SETTING_KEYS.PARTICIPANT_ROSTER_FOLDER_ID] ||
+    getInitialSettingValue_(APP_CONFIG.SETTING_KEYS.PARTICIPANT_ROSTER_FOLDER_ID);
+  return DriveApp.getFolderById(folderId);
+}
+
+function getInitialSettingValue_(key) {
+  var matched = APP_CONFIG.INITIAL_SETTINGS.filter(function (setting) {
+    return setting[0] === key;
+  })[0];
+  return matched ? matched[1] : '';
 }
 
 function getParticipantRosterSheet_() {
