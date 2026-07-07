@@ -83,7 +83,7 @@ function sendConfirmationMail_(application) {
   if (replyTo) {
     options.replyTo = replyTo;
   }
-  MailApp.sendEmail(options);
+  sendMail_(options, settings);
 }
 
 function sendTemplatedApplicationMail_(application) {
@@ -133,7 +133,7 @@ function sendTemplatedApplicationMail_(application) {
   if (context[placeholders.REPLY_TO_EMAIL]) {
     options.replyTo = context[placeholders.REPLY_TO_EMAIL];
   }
-  MailApp.sendEmail(options);
+  sendMail_(options, settings);
 }
 
 function appendPaymentInstructionIfNeeded_(body, status, context) {
@@ -224,7 +224,25 @@ function sendPaymentConfirmationMail_(application) {
   if (context[APP_CONFIG.MAIL_PLACEHOLDERS.REPLY_TO_EMAIL]) {
     options.replyTo = context[APP_CONFIG.MAIL_PLACEHOLDERS.REPLY_TO_EMAIL];
   }
-  MailApp.sendEmail(options);
+  sendMail_(options, settings);
+}
+
+function sendMail_(options, settings) {
+  var mailSettings = settings || getSettings_();
+  var from = String(
+    mailSettings[APP_CONFIG.SETTING_KEYS.SEND_FROM_EMAIL] || ''
+  ).trim();
+  var mailOptions = Object.assign({}, options);
+  var to = mailOptions.to;
+  var subject = mailOptions.subject;
+  var body = mailOptions.body;
+  delete mailOptions.to;
+  delete mailOptions.subject;
+  delete mailOptions.body;
+  if (from) {
+    mailOptions.from = from;
+  }
+  GmailApp.sendEmail(to, subject, body, mailOptions);
 }
 
 function buildApplicationEventMailContext_(application, eventSlot, settings) {

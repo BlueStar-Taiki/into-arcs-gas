@@ -2,10 +2,12 @@
 
 set -eu
 
+PATH="/usr/local/bin:${PATH}"
+
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_DIR=$(CDPATH= cd -- "${SCRIPT_DIR}/.." && pwd)
 GAS_PROJECT_DIR="${REPO_DIR}/gas/star-photo-application"
-COMMIT_MESSAGE="feat: add calendar sync feature switch"
+COMMIT_MESSAGE="feat: send star photo mail from configured alias"
 
 echo "[1/9] Moving to repository: ${REPO_DIR}"
 cd "${REPO_DIR}"
@@ -40,10 +42,11 @@ cd "${REPO_DIR}"
 echo "[7/9] Staging only files changed in this update"
 git add -- \
   docs/star_photo_application_manual.md \
+  docs/star_photo_application_schema.md \
   docs/star_photo_event_design.md \
-  gas/star-photo-application/src/calendar.js \
   gas/star-photo-application/src/config.js \
-  gas/star-photo-application/src/main.js \
+  gas/star-photo-application/src/eventStatusMail.js \
+  gas/star-photo-application/src/mail.js \
   scripts/commit_last_update.sh
 
 if git diff --cached --name-only | grep -Eq '(^|/)\.clasp\.json$'; then

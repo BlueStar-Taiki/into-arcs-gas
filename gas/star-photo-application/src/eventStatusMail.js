@@ -384,7 +384,7 @@ function sendEventStatusMailForSlot_(slot, status, applications) {
     if (mail.replyTo) {
       options.replyTo = mail.replyTo;
     }
-    MailApp.sendEmail(options);
+    sendMail_(options, settings);
   });
   return prepared.length;
 }
@@ -430,7 +430,13 @@ function sendGuideStatusMailForSlot_(eventRowObject, status) {
     };
   });
   prepared.forEach(function (mail) {
-    sendGuideStatusMail_(mail.guide, mail.context, mail.subject, mail.body);
+    sendGuideStatusMail_(
+      mail.guide,
+      mail.context,
+      mail.subject,
+      mail.body,
+      settings
+    );
   });
   return {
     sentCount: prepared.length,
@@ -439,7 +445,7 @@ function sendGuideStatusMailForSlot_(eventRowObject, status) {
   };
 }
 
-function sendGuideStatusMail_(guide, context, subject, body) {
+function sendGuideStatusMail_(guide, context, subject, body, settings) {
   var options = {
     to: guide.email,
     subject: subject,
@@ -450,7 +456,7 @@ function sendGuideStatusMail_(guide, context, subject, body) {
   if (replyTo) {
     options.replyTo = replyTo;
   }
-  MailApp.sendEmail(options);
+  sendMail_(options, settings);
 }
 
 function appendParticipantRosterUrlIfNeeded_(body, status, context) {

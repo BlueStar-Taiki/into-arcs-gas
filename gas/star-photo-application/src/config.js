@@ -346,6 +346,7 @@ var APP_CONFIG = Object.freeze({
   SETTING_KEYS: Object.freeze({
     EVENT_NAME: 'EVENT_NAME',
     CONTACT_NAME: 'CONTACT_NAME',
+    SEND_FROM_EMAIL: 'SEND_FROM_EMAIL',
     REPLY_TO_EMAIL: 'REPLY_TO_EMAIL',
     DISCORD_MENTION: 'DISCORD_MENTION',
     CAPACITY_OVERBOOK_ALLOWANCE: 'CAPACITY_OVERBOOK_ALLOWANCE',
@@ -356,6 +357,7 @@ var APP_CONFIG = Object.freeze({
   INITIAL_SETTINGS: Object.freeze([
     Object.freeze(['EVENT_NAME', '星空撮影イベント', 'メール・通知に表示するイベント名']),
     Object.freeze(['CONTACT_NAME', 'INTO-ARCS', '確認メールに表示する主催者名']),
+    Object.freeze(['SEND_FROM_EMAIL', 'intoarcsform@gmail.com', 'メール送信に使うGmailエイリアス']),
     Object.freeze(['REPLY_TO_EMAIL', '', '確認メールの返信先（空欄の場合は指定しない）']),
     Object.freeze(['DISCORD_MENTION', '', 'Discord通知の先頭に付けるメンション（任意）']),
     Object.freeze(['CAPACITY_OVERBOOK_ALLOWANCE', '2', '新規申込を参加扱いにできる定員超過の許容人数']),

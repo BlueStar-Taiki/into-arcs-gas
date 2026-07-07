@@ -56,6 +56,7 @@ setupは申込管理の `Discord通知状況`、`カレンダー登録状況`、
 |---|---|---|
 | EVENT_NAME | 星空撮影イベント | メール・通知に表示するイベント名 |
 | CONTACT_NAME | INTO-ARCS | メール送信者表示名・署名 |
+| SEND_FROM_EMAIL | intoarcsform@gmail.com | メール送信に使うGmailエイリアス |
 | REPLY_TO_EMAIL | 空欄 | メール返信先。空欄なら指定しない |
 | DISCORD_MENTION | 空欄 | Discord本文の任意メンション |
 | CAPACITY_OVERBOOK_ALLOWANCE | 2 | 新規申込を参加扱いにできる定員超過の許容人数 |
