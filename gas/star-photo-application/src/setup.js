@@ -35,6 +35,7 @@ function setupApplicationFormSheet() {
   );
   var guideSheet = setupGuideSheet_(spreadsheet);
   var participantRosterSheet = setupParticipantRosterSheet_(spreadsheet);
+  migrateEventDateDateTimeColumns_(spreadsheet);
   var eventDateSheet = ensureSheetWithHeaders_(
     spreadsheet,
     APP_CONFIG.SHEETS.EVENT_DATES,
@@ -501,6 +502,73 @@ function appendMissingHeaders_(sheet, requiredHeaders) {
     .setValues([missingHeaders]);
 }
 
+function migrateEventDateDateTimeColumns_(spreadsheet) {
+  var sheet = spreadsheet.getSheetByName(APP_CONFIG.SHEETS.EVENT_DATES);
+  if (!sheet || sheet.getLastColumn() < 1) {
+    return;
+  }
+  var headers = APP_CONFIG.EVENT_DATE_HEADERS;
+  var legacyHeader = '申し込み日時';
+  var headerMap = getHeaderMap_(sheet);
+  if (headerMap[legacyHeader] && !headerMap[headers.APPLICATION_DATE]) {
+    sheet
+      .getRange(APP_CONFIG.HEADER_ROW, headerMap[legacyHeader])
+      .setValue(headers.APPLICATION_DATE);
+  }
+
+  headerMap = getHeaderMap_(sheet);
+  if (headerMap[headers.APPLICATION_DATE] && !headerMap[headers.START_TIME]) {
+    sheet.insertColumnAfter(headerMap[headers.APPLICATION_DATE]);
+    sheet
+      .getRange(APP_CONFIG.HEADER_ROW, headerMap[headers.APPLICATION_DATE] + 1)
+      .setValue(headers.START_TIME);
+  }
+
+  headerMap = getHeaderMap_(sheet);
+  if (
+    sheet.getLastRow() < APP_CONFIG.DATA_START_ROW ||
+    !headerMap[headers.APPLICATION_DATE] ||
+    !headerMap[headers.START_TIME]
+  ) {
+    return;
+  }
+  var rowCount = sheet.getLastRow() - APP_CONFIG.HEADER_ROW;
+  var dateRange = sheet.getRange(
+    APP_CONFIG.DATA_START_ROW,
+    headerMap[headers.APPLICATION_DATE],
+    rowCount,
+    1
+  );
+  var timeRange = sheet.getRange(
+    APP_CONFIG.DATA_START_ROW,
+    headerMap[headers.START_TIME],
+    rowCount,
+    1
+  );
+  var dateValues = dateRange.getValues();
+  var timeValues = timeRange.getValues();
+  var changed = false;
+  dateValues.forEach(function (row, index) {
+    var dateValue = row[0];
+    if (!(dateValue instanceof Date) || isNaN(dateValue.getTime())) {
+      return;
+    }
+    if (!timeValues[index][0]) {
+      timeValues[index][0] = formatTimeOnly_(dateValue);
+      changed = true;
+    }
+    var dateOnly = toDateOnly_(dateValue);
+    if (dateOnly instanceof Date && dateOnly.getTime() !== dateValue.getTime()) {
+      dateValues[index][0] = dateOnly;
+      changed = true;
+    }
+  });
+  if (changed) {
+    dateRange.setValues(dateValues);
+    timeRange.setValues(timeValues);
+  }
+}
+
 /**
  * 廃止対象ヘッダーと完全一致する申込管理列だけを削除する。
  * 右側の列から削除し、列移動による誤削除を防ぐ。
@@ -821,7 +889,8 @@ function configureEventDateSheet_(sheet) {
   var headers = APP_CONFIG.EVENT_DATE_HEADERS;
   var headerMap = getHeaderMap_(sheet);
   var widths = {};
-  widths[headers.APPLICATION_DATE] = 170;
+  widths[headers.APPLICATION_DATE] = 120;
+  widths[headers.START_TIME] = 100;
   widths[headers.TITLE] = 240;
   widths[headers.CAPACITY] = 80;
   widths[headers.MINIMUM_PARTICIPANTS] = 120;
@@ -898,7 +967,15 @@ function configureEventDateSheet_(sheet) {
       APP_CONFIG.VALIDATION_ROW_COUNT,
       1
     )
-    .setNumberFormat(APP_CONFIG.DATE_FORMAT);
+    .setNumberFormat(APP_CONFIG.DATE_ONLY_FORMAT);
+  sheet
+    .getRange(
+      APP_CONFIG.DATA_START_ROW,
+      headerMap[headers.START_TIME],
+      APP_CONFIG.VALIDATION_ROW_COUNT,
+      1
+    )
+    .setNumberFormat(APP_CONFIG.TIME_FORMAT);
   sheet
     .getRange(
       APP_CONFIG.DATA_START_ROW,

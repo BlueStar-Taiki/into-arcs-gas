@@ -61,7 +61,9 @@ function getEventStatusEditContext_(e) {
   var row = sheet
     .getRange(e.range.getRow(), APP_CONFIG.FIRST_COLUMN, 1, sheet.getLastColumn())
     .getValues()[0];
-  var applicationDate = row[headerMap[headers.APPLICATION_DATE] - 1];
+  var eventDate = row[headerMap[headers.APPLICATION_DATE] - 1];
+  var startTime = row[headerMap[headers.START_TIME] - 1];
+  var applicationDate = combineDateAndTime_(eventDate, startTime);
   var title = String(row[headerMap[headers.TITLE] - 1] || '').trim();
   if (!(applicationDate instanceof Date) || isNaN(applicationDate.getTime()) ||
       !title) {
@@ -290,6 +292,8 @@ function buildEventStatusMailContext_(application, slot, status, settings) {
   var context = {};
   context[placeholders.NAME] = application[headers.NAME];
   context[placeholders.APPLICATION_DATE] = formatDateTime_(slot.applicationDate);
+  context[placeholders.EVENT_DATE] = formatDateOnly_(slot.applicationDate);
+  context[placeholders.START_TIME] = formatTimeOnly_(slot.applicationDate);
   context[placeholders.TITLE] = slot.title;
   context[placeholders.PARTICIPANTS] = participantCount;
   context[placeholders.PRICE_PER_PERSON] = slot.pricePerPerson;
@@ -324,6 +328,10 @@ function buildGuideStatusMailContext_(guide, eventRowObject, status, settings) {
   context[placeholders.GUIDE_NAME] = guide.name;
   context[placeholders.APPLICATION_DATE] =
     formatDateTime_(eventRowObject.applicationDate);
+  context[placeholders.EVENT_DATE] =
+    formatDateOnly_(eventRowObject.applicationDate);
+  context[placeholders.START_TIME] =
+    formatTimeOnly_(eventRowObject.applicationDate);
   context[placeholders.TITLE] = eventRowObject.title;
   context[placeholders.RECEPTION_START_TIME] =
     formatReceptionTime_(eventRowObject.receptionStartTime);

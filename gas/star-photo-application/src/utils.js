@@ -85,8 +85,103 @@ function formatDateTime_(value) {
   return Utilities.formatDate(
     date,
     APP_CONFIG.TIME_ZONE,
-    APP_CONFIG.DATE_FORMAT
+    APP_CONFIG.DATE_TIME_DISPLAY_FORMAT
   );
+}
+
+function formatDateOnly_(value) {
+  var date = value instanceof Date ? value : new Date(value);
+  if (isNaN(date.getTime())) {
+    return String(value || '');
+  }
+  return Utilities.formatDate(
+    date,
+    APP_CONFIG.TIME_ZONE,
+    APP_CONFIG.DATE_ONLY_FORMAT
+  );
+}
+
+function formatTimeOnly_(value) {
+  var time = parseTimeParts_(value);
+  if (!time) {
+    return String(value || '');
+  }
+  return ('0' + time.hour).slice(-2) + ':' + ('0' + time.minute).slice(-2);
+}
+
+function formatJapaneseWeekday_(value) {
+  var date = value instanceof Date ? value : new Date(value);
+  if (isNaN(date.getTime())) {
+    return '';
+  }
+  var year = Number(Utilities.formatDate(date, APP_CONFIG.TIME_ZONE, 'yyyy'));
+  var month = Number(Utilities.formatDate(date, APP_CONFIG.TIME_ZONE, 'M'));
+  var day = Number(Utilities.formatDate(date, APP_CONFIG.TIME_ZONE, 'd'));
+  if (month < 3) {
+    month += 12;
+    year -= 1;
+  }
+  var zeller =
+    (day +
+      Math.floor((13 * (month + 1)) / 5) +
+      year +
+      Math.floor(year / 4) -
+      Math.floor(year / 100) +
+      Math.floor(year / 400)) %
+    7;
+  return APP_CONFIG.JAPANESE_WEEKDAYS[(zeller + 6) % 7];
+}
+
+function combineDateAndTime_(dateValue, timeValue) {
+  var date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+  var time = parseTimeParts_(timeValue);
+  if (isNaN(date.getTime()) || !time) {
+    return null;
+  }
+  var year = Number(Utilities.formatDate(date, APP_CONFIG.TIME_ZONE, 'yyyy'));
+  var month = Number(Utilities.formatDate(date, APP_CONFIG.TIME_ZONE, 'M'));
+  var day = Number(Utilities.formatDate(date, APP_CONFIG.TIME_ZONE, 'd'));
+  return new Date(year, month - 1, day, time.hour, time.minute, 0);
+}
+
+function toDateOnly_(value) {
+  var date = value instanceof Date ? value : new Date(value);
+  if (isNaN(date.getTime())) {
+    return value;
+  }
+  var year = Number(Utilities.formatDate(date, APP_CONFIG.TIME_ZONE, 'yyyy'));
+  var month = Number(Utilities.formatDate(date, APP_CONFIG.TIME_ZONE, 'M'));
+  var day = Number(Utilities.formatDate(date, APP_CONFIG.TIME_ZONE, 'd'));
+  return new Date(year, month - 1, day);
+}
+
+function parseTimeParts_(value) {
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return {
+      hour: Number(Utilities.formatDate(value, APP_CONFIG.TIME_ZONE, 'H')),
+      minute: Number(Utilities.formatDate(value, APP_CONFIG.TIME_ZONE, 'm'))
+    };
+  }
+  if (typeof value === 'number' && isFinite(value)) {
+    var totalMinutes = Math.round(value * 24 * 60) % (24 * 60);
+    if (totalMinutes < 0) {
+      totalMinutes += 24 * 60;
+    }
+    return {
+      hour: Math.floor(totalMinutes / 60),
+      minute: totalMinutes % 60
+    };
+  }
+  var match = String(value || '').trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (!match) {
+    return null;
+  }
+  var hour = Number(match[1]);
+  var minute = Number(match[2]);
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+    return null;
+  }
+  return { hour: hour, minute: minute };
 }
 
 function normalizeError_(error) {

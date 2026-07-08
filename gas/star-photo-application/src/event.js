@@ -25,14 +25,18 @@ function getEventSlots_() {
   var seenKeys = {};
   return values
     .map(function (row, index) {
-      var applicationDate = row[headerMap[headers.APPLICATION_DATE] - 1];
+      var eventDate = row[headerMap[headers.APPLICATION_DATE] - 1];
+      var startTime = row[headerMap[headers.START_TIME] - 1];
+      var applicationDate = combineDateAndTime_(eventDate, startTime);
       var title = String(row[headerMap[headers.TITLE] - 1] || '').trim();
-      if (!applicationDate && !title) {
+      if (!eventDate && !startTime && !title) {
         return null;
       }
       var slot = {
         rowNumber: APP_CONFIG.DATA_START_ROW + index,
         applicationDate: applicationDate,
+        eventDate: eventDate,
+        startTime: startTime,
         title: title,
         capacity: toNonNegativeInteger_(
           row[headerMap[headers.CAPACITY] - 1]
@@ -175,10 +179,24 @@ function createEventSlotKey_(applicationDate, title) {
 
 function getEventSlotBaseLabel_(slot) {
   return (
+    formatDateOnly_(slot.applicationDate) +
+    ' (' +
+    formatJapaneseWeekday_(slot.applicationDate) +
+    ') ' +
+    formatTimeOnly_(slot.applicationDate) +
+    ' ' +
+    APP_CONFIG.FORM_CHOICE.TITLE_PREFIX +
+    slot.title +
+    APP_CONFIG.FORM_CHOICE.TITLE_SUFFIX
+  );
+}
+
+function getLegacyEventSlotBaseLabel_(slot) {
+  return (
     Utilities.formatDate(
       slot.applicationDate,
       APP_CONFIG.TIME_ZONE,
-      APP_CONFIG.FORM_CHOICE.DATE_FORMAT
+      APP_CONFIG.FORM_CHOICE.LEGACY_DATE_FORMAT
     ) +
     ' ' +
     slot.title
@@ -219,7 +237,10 @@ function resolveEventSlotFromChoice_(choiceValue) {
       ''
     );
   var matches = getEventSlots_().filter(function (slot) {
-    return getEventSlotBaseLabel_(slot) === baseLabel;
+    return (
+      getEventSlotBaseLabel_(slot) === baseLabel ||
+      getLegacyEventSlotBaseLabel_(slot) === baseLabel
+    );
   });
   if (!matches.length) {
     throw new Error(APP_CONFIG.TEXT.EVENT_SLOT_NOT_FOUND_PREFIX + choiceValue);

@@ -62,7 +62,10 @@ function registerEventSlotsToCalendar() {
     values.forEach(function (row, index) {
       var slot = {
         rowNumber: APP_CONFIG.DATA_START_ROW + index,
-        applicationDate: row[headerMap[headers.APPLICATION_DATE] - 1],
+        applicationDate: combineDateAndTime_(
+          row[headerMap[headers.APPLICATION_DATE] - 1],
+          row[headerMap[headers.START_TIME] - 1]
+        ),
         title: row[headerMap[headers.TITLE] - 1],
         eventId: row[headerMap[headers.EVENT_ID] - 1],
         recruitmentStatus:

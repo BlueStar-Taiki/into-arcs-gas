@@ -7,7 +7,7 @@ PATH="/usr/local/bin:${PATH}"
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_DIR=$(CDPATH= cd -- "${SCRIPT_DIR}/.." && pwd)
 GAS_PROJECT_DIR="${REPO_DIR}/gas/star-photo-application"
-COMMIT_MESSAGE="feat: send star photo mail from configured alias"
+COMMIT_MESSAGE="feat: split event date and start time"
 
 echo "[1/9] Moving to repository: ${REPO_DIR}"
 cd "${REPO_DIR}"
@@ -44,9 +44,13 @@ git add -- \
   docs/star_photo_application_manual.md \
   docs/star_photo_application_schema.md \
   docs/star_photo_event_design.md \
+  gas/star-photo-application/src/calendar.js \
   gas/star-photo-application/src/config.js \
+  gas/star-photo-application/src/event.js \
   gas/star-photo-application/src/eventStatusMail.js \
   gas/star-photo-application/src/mail.js \
+  gas/star-photo-application/src/setup.js \
+  gas/star-photo-application/src/utils.js \
   scripts/commit_last_update.sh
 
 if git diff --cached --name-only | grep -Eq '(^|/)\.clasp\.json$'; then

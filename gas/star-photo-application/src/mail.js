@@ -254,6 +254,12 @@ function buildApplicationEventMailContext_(application, eventSlot, settings) {
   context[placeholders.APPLICATION_DATE] = formatDateTime_(
     application[headers.APPLICATION_DATE]
   );
+  context[placeholders.EVENT_DATE] = formatDateOnly_(
+    application[headers.APPLICATION_DATE]
+  );
+  context[placeholders.START_TIME] = formatTimeOnly_(
+    application[headers.APPLICATION_DATE]
+  );
   context[placeholders.TITLE] = application[headers.TITLE];
   context[placeholders.PARTICIPANTS] = participantCount;
   context[placeholders.PRICE_PER_PERSON] = eventSlot.pricePerPerson;
