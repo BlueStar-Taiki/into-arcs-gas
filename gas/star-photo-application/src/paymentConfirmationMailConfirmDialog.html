@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body { font-family: sans-serif; color: #202124; padding: 8px 16px; }
+      dl { display: grid; grid-template-columns: 120px 1fr; gap: 6px; }
+      dt { font-weight: 600; }
+      dd { margin: 0; overflow-wrap: anywhere; }
+      .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+      button { padding: 8px 20px; }
+      #message { white-space: pre-wrap; color: #b3261e; margin-top: 12px; }
+    </style>
+  </head>
+  <body>
+    <p>以下の申込者へお支払い確認メールを送信してよろしいですか？</p>
+    <dl>
+      <dt>お名前</dt><dd id="name"></dd>
+      <dt>メール</dt><dd id="email"></dd>
+      <dt>イベント</dt><dd id="title"></dd>
+      <dt>実施日</dt><dd id="eventDate"></dd>
+      <dt>開始時刻</dt><dd id="startTime"></dd>
+      <dt>参加人数</dt><dd id="participants"></dd>
+      <dt>お支払い</dt><dd id="paymentStatus"></dd>
+    </dl>
+    <div id="message"></div>
+    <div class="actions">
+      <button id="no" onclick="cancelSend()">いいえ</button>
+      <button id="yes" onclick="confirmSend()">はい</button>
+    </div>
+    <script>
+      const context = <?!= contextJson ?>;
+      document.getElementById('name').textContent = context.name;
+      document.getElementById('email').textContent = context.email || '未設定';
+      document.getElementById('title').textContent = context.title;
+      document.getElementById('eventDate').textContent = context.eventDate;
+      document.getElementById('startTime').textContent = context.startTime;
+      document.getElementById('participants').textContent =
+        context.participants ? context.participants + '名' : '';
+      document.getElementById('paymentStatus').textContent =
+        context.paymentStatus;
+
+      function disableButtons() {
+        document.getElementById('yes').disabled = true;
+        document.getElementById('no').disabled = true;
+      }
+      function showError(error) {
+        document.getElementById('message').textContent =
+          error && error.message ? error.message : String(error);
+        document.getElementById('yes').disabled = false;
+        document.getElementById('no').disabled = false;
+      }
+      function confirmSend() {
+        disableButtons();
+        google.script.run
+          .withSuccessHandler(function (result) {
+            window.alert(result.message);
+            google.script.host.close();
+          })
+          .withFailureHandler(showError)
+          .sendPaymentConfirmationMailAfterConfirmation(
+            context.rowNumber,
+            context.applicationId
+          );
+      }
+      function cancelSend() {
+        google.script.host.close();
+      }
+    </script>
+  </body>
+</html>

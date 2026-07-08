@@ -371,9 +371,44 @@ function isPaymentStatusPaidEdit_(e) {
   );
 }
 
-function handlePaymentStatusPaidEdit_(e) {
+function getPaymentConfirmationMailContext_(e) {
   var rowNumber = e.range.getRow();
   var application = getApplicationByRow_(rowNumber);
+  var headers = APP_CONFIG.APPLICATION_HEADERS;
+  return {
+    rowNumber: rowNumber,
+    applicationId: String(application[headers.APPLICATION_ID] || ''),
+    name: String(application[headers.NAME] || ''),
+    email: String(application[headers.EMAIL] || ''),
+    title: String(application[headers.TITLE] || ''),
+    applicationDate: formatDateTime_(application[headers.APPLICATION_DATE]),
+    eventDate: formatDateOnly_(application[headers.APPLICATION_DATE]),
+    startTime: formatTimeOnly_(application[headers.APPLICATION_DATE]),
+    participants: String(application[headers.PARTICIPANTS] || ''),
+    paymentStatus: String(application[headers.PAYMENT_STATUS] || '')
+  };
+}
+
+function showPaymentConfirmationMailDialog_(context) {
+  var template = HtmlService.createTemplateFromFile(
+    'paymentConfirmationMailConfirmDialog'
+  );
+  template.contextJson = JSON.stringify(context).replace(/</g, '\\u003c');
+  SpreadsheetApp.getUi().showModalDialog(
+    template.evaluate().setWidth(480).setHeight(420),
+    'お支払い確認メール'
+  );
+}
+
+function sendPaymentConfirmationMailAfterConfirmation(rowNumber, applicationId) {
+  var application = getApplicationByRow_(rowNumber);
+  var headers = APP_CONFIG.APPLICATION_HEADERS;
+  if (String(application[headers.APPLICATION_ID] || '') !== String(applicationId || '')) {
+    throw new Error(APP_CONFIG.TEXT.PAYMENT_CONFIRMATION_APPLICATION_CHANGED);
+  }
+  if (String(application[headers.PAYMENT_STATUS] || '') !== APP_CONFIG.PAYMENT_STATUS.PAID) {
+    throw new Error(APP_CONFIG.TEXT.PAYMENT_CONFIRMATION_STATUS_CHANGED);
+  }
   try {
     sendPaymentConfirmationMail_(application);
     appendLog_(
@@ -383,6 +418,9 @@ function handlePaymentStatusPaidEdit_(e) {
       APP_CONFIG.TEXT.PAYMENT_CONFIRMATION_MAIL_SENT,
       ''
     );
+    return {
+      message: APP_CONFIG.TEXT.PAYMENT_CONFIRMATION_MAIL_SENT
+    };
   } catch (error) {
     var normalized = normalizeError_(error);
     appendLog_(
@@ -391,11 +429,6 @@ function handlePaymentStatusPaidEdit_(e) {
       application[APP_CONFIG.APPLICATION_HEADERS.APPLICATION_ID],
       APP_CONFIG.TEXT.PAYMENT_CONFIRMATION_MAIL_FAILED,
       normalized.detail || normalized.message
-    );
-    showUiAlert_(
-      APP_CONFIG.TEXT.PAYMENT_CONFIRMATION_MAIL_FAILED +
-        ' ' +
-        normalized.message
     );
     throw error;
   }

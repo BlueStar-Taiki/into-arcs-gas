@@ -3,7 +3,10 @@
  */
 function onEventStatusEdit(e) {
   if (isPaymentStatusPaidEdit_(e)) {
-    handlePaymentStatusPaidEdit_(e);
+    var paymentContext = getPaymentConfirmationMailContext_(e);
+    if (paymentContext) {
+      showPaymentConfirmationMailDialog_(paymentContext);
+    }
     return;
   }
   if (!isEventStatusEdit_(e)) {

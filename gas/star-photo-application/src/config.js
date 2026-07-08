@@ -556,6 +556,8 @@ var APP_CONFIG = Object.freeze({
     EVENT_STATUS_MAIL_FAILED: '実施状況メールの送信に失敗したため、変更を元に戻しました。',
     PAYMENT_CONFIRMATION_MAIL_SENT: 'お支払い確認メールを送信しました。',
     PAYMENT_CONFIRMATION_MAIL_FAILED: 'お支払い確認メールの送信に失敗しました。',
+    PAYMENT_CONFIRMATION_APPLICATION_CHANGED: '確認中に申込行が変更されました。現在の状態を確認してやり直してください。',
+    PAYMENT_CONFIRMATION_STATUS_CHANGED: '確認中にお支払い状況が変更されました。現在の状態を確認してやり直してください。',
     GUIDE_NOT_FOUND_PREFIX: '担当者が担当シートに見つかりません: ',
     GUIDE_EMAIL_EMPTY_PREFIX: '担当者のメールアドレスが未設定です: ',
     GUIDE_MAIL_NO_RECIPIENTS: 'ガイド送信対象なし',
